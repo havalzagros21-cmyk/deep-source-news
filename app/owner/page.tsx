@@ -1302,6 +1302,8 @@ export default function OwnerPage() {
                         <option value="sports">رياضة</option>
                         <option value="culture">ثقافة</option>
                         <option value="opinions">آراء</option>
+                        <option value="zodiac">أبراج الفلك</option>
+                        <option value="misc">منوعات</option>
                       </select>
                     </div>
                     
