@@ -5,8 +5,7 @@ import ImageSlider from '../components/ImageSlider'
 import { 
   FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, 
   FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, 
-  FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus, FaBitcoin,
-  FaEuro, FaPound, FaYen, FaDollar
+  FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus, FaBitcoin
 } from 'react-icons/fa'
 
 export const dynamic = 'force-dynamic'
@@ -66,6 +65,10 @@ function PriceSection({ title, icon, children, color = "blue" }: any) {
   )
 }
 
+// ============================================================
+// دوال جلب البيانات من Supabase
+// ============================================================
+
 async function getHeroSection() {
   const { data, error } = await supabase
     .from('hero_section')
@@ -115,39 +118,12 @@ async function getSideNews() {
   return data || []
 }
 
-async function getSmallNews() {
+async function getAllNews() {
   const { data } = await supabase
     .from('news')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(9)
-  return data || []
-}
-
-async function getLargeNews() {
-  const { data } = await supabase
-    .from('news')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(9)
-  return data || []
-}
-
-async function getRegularNews() {
-  const { data } = await supabase
-    .from('news')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(12)
-  return data || []
-}
-
-async function getExtraNews() {
-  const { data } = await supabase
-    .from('news')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(3)
+    .limit(30)
   return data || []
 }
 
@@ -185,10 +161,22 @@ async function getExchangeRates() {
   return rates
 }
 
+// ============================================================
+// دالة جلب الجريدة اليومية (مهمة)
+// ============================================================
+async function getDailyBrief() {
+  const { data } = await supabase
+    .from('daily_brief')
+    .select('*')
+    .order('order_index', { ascending: true })
+  return data || []
+}
+
+// ============================================================
+// النصوص الثابتة
+// ============================================================
 const economicAnalysisText = `تحليلات اقتصادية حصرية يقدمها فريق ديب سورس نيوز.`
-
 const ourVisionText = `نسعى لتقديم محتوى إخباري عميق ومستقل يعزز الوعي ويدعم المعرفة.`
-
 const zodiacTodayText = `🍀 برج الحمل: يوم مليء بالطاقة الإيجابية والفرص الجديدة.
 🍀 برج الثور: فرص مالية قادمة واستقرار في العلاقات.
 🍀 برج الجوزاء: تواصل اجتماعي ناجح وفرص للسفر.
@@ -203,31 +191,27 @@ const stats = [
   { icon: FaCalendarAlt, value: 'منذ 2024', label: 'الانطلاق' },
 ]
 
+// ============================================================
+// المكون الرئيسي
+// ============================================================
 export default async function Home() {
-  const [hero, breakingNews, mainNews, sideNews, smallNews, largeNews, regularNews, extraNews, sliderNews, exchangeRates] = await Promise.all([
+  const [hero, breakingNews, allNews, sliderNews, exchangeRates, dailyBrief] = await Promise.all([
     getHeroSection(),
     getBreakingNews(),
-    getMainNews(),
-    getSideNews(),
-    getSmallNews(),
-    getLargeNews(),
-    getRegularNews(),
-    getExtraNews(),
+    getAllNews(),
     getSliderNews(),
     getExchangeRates(),
+    getDailyBrief(),  // تمت إضافة هذه الدالة
   ])
 
   const showHero = hero.is_enabled !== false
 
-  // تصفية الأخبار حسب موقع الظهور (position)
-  const breakingGroup = breakingNews.slice(0, 4)
-  const sideGroup = sideNews.slice(0, 4)
-
-  // تقسيم الأخبار حسب موقع الظهور المحدد من لوحة التحكم
-  const allNews = [...smallNews, ...largeNews, ...regularNews]
+  // تصفية الأخبار حسب مكان الظهور (position)
+  const featuredNews = allNews.filter(n => n.is_featured === true).slice(0, 4)
+  const sideNews = allNews.filter(n => n.position === 'auto' || !n.position).slice(0, 4)
   
   // أخبار القالب الأول (تحت السلايدر)
-  const template1News = allNews.filter(n => n.position === 'template1_top' || n.position === 'auto').slice(0, 3)
+  const template1TopNews = allNews.filter(n => n.position === 'template1_top' || n.position === 'auto').slice(0, 3)
   const template1LargeNews = allNews.filter(n => n.position === 'template1_bottom' || n.position === 'auto').slice(0, 3)
   
   // أخبار القالب الثاني
@@ -238,22 +222,12 @@ export default async function Home() {
   const template3News = allNews.filter(n => n.position === 'template3' || n.position === 'auto').slice(0, 3)
   const template3LargeNews = allNews.filter(n => n.position === 'template3' || n.position === 'auto').slice(3, 6)
 
-  const smallGroups = [
-    template1News,
-    template2News,
-    template3News,
-  ]
-
-  const largeGroups = [
-    template1LargeNews,
-    template2LargeNews,
-    template3LargeNews,
-  ]
-
-  const regularGroup1 = regularNews.slice(0, 4)
-  const regularGroup2 = regularNews.slice(4, 8)
-  const regularGroup3 = regularNews.slice(8, 12)
-  const extraGroup = extraNews.slice(0, 3)
+  // أخبار عادية للقوائم الجانبية
+  const regularNewsAll = allNews.filter(n => n.position === 'auto' || !n.position)
+  const regularGroup1 = regularNewsAll.slice(0, 4)
+  const regularGroup2 = regularNewsAll.slice(4, 8)
+  const regularGroup3 = regularNewsAll.slice(8, 12)
+  const extraGroup = regularNewsAll.slice(12, 15)
 
   const NumberedListWithImage = ({ items, color = "text-red-600" }: any) => (
     <div className="space-y-2">
@@ -356,7 +330,7 @@ export default async function Home() {
               <h3 className="text-red-600 font-bold text-sm mb-2 pb-2 border-b border-red-200 dark:border-red-800 flex items-center gap-1">
                 <FaFire size={12} /> أخبار عاجلة
               </h3>
-              <NumberedListWithImage items={breakingGroup} color="text-red-500" />
+              <NumberedListWithImage items={featuredNews} color="text-red-500" />
               <FreeTextBlock 
                 title="التحليلات الاقتصادية" 
                 icon={<FaChartBar size={10} />} 
@@ -370,7 +344,7 @@ export default async function Home() {
             <ImageSlider slides={sliderNews} />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-              {smallGroups[0].map((news) => (
+              {template1TopNews.map((news) => (
                 <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                   <a href={`/news/${news.slug}`} className="flex gap-2">
                     {news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />}
@@ -384,7 +358,7 @@ export default async function Home() {
               ))}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {largeGroups[0].map((news) => (
+              {template1LargeNews.map((news) => (
                 <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                   <a href={`/news/${news.slug}`}>
                     {news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />}
@@ -405,7 +379,7 @@ export default async function Home() {
               <h3 className="text-gray-700 dark:text-gray-300 font-bold text-sm mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-1">
                 <FaNewspaper size={12} /> أخبار جانبية
               </h3>
-              <NumberedListWithImage items={sideGroup} color="text-gray-500" />
+              <NumberedListWithImage items={sideNews} color="text-gray-500" />
               <FreeTextBlock 
                 title="رؤيتنا" 
                 icon={<FaEye size={10} />} 
@@ -459,7 +433,7 @@ export default async function Home() {
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                {smallGroups[1].map((news) => (
+                {template2News.map((news) => (
                   <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                     <a href={`/news/${news.slug}`} className="flex gap-2">
                       {news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />}
@@ -473,7 +447,7 @@ export default async function Home() {
                 ))}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                {largeGroups[1].map((news) => (
+                {template2LargeNews.map((news) => (
                   <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                     <a href={`/news/${news.slug}`}>
                       {news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />}
@@ -522,7 +496,7 @@ export default async function Home() {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-              {smallGroups[2].map((news) => (
+              {template3News.map((news) => (
                 <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                   <a href={`/news/${news.slug}`} className="flex gap-2">
                     {news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />}
@@ -536,7 +510,7 @@ export default async function Home() {
               ))}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {largeGroups[2].map((news) => (
+              {template3LargeNews.map((news) => (
                 <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                   <a href={`/news/${news.slug}`}>
                     {news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />}
@@ -561,8 +535,6 @@ export default async function Home() {
                 </h3>
               </div>
               <div className="p-3 max-h-[550px] overflow-y-auto">
-                
-                {/* العملات العربية */}
                 <PriceSection title="العملات العربية" icon="🇸🇦" color="green">
                   <PriceItem name="الريال السعودي" code="SAR" value={exchangeRates?.sar || '3.75'} unit="ر.س" trend="up" />
                   <PriceItem name="الدرهم الإماراتي" code="AED" value={exchangeRates?.aed || '1.02'} unit="د.إ" trend="stable" />
@@ -574,7 +546,6 @@ export default async function Home() {
                   <PriceItem name="الجنيه السوداني" code="SDG" value={exchangeRates?.sdg || '0.062'} unit="ج.س" trend="down" />
                 </PriceSection>
 
-                {/* العملات الأجنبية */}
                 <PriceSection title="العملات الأجنبية" icon="🌍" color="blue">
                   <PriceItem name="الدولار الأمريكي" code="USD" value={exchangeRates?.usd || '3.75'} unit="ج.م" trend="up" icon={<FaDollarSign className="text-yellow-500" />} />
                   <PriceItem name="اليورو" code="EUR" value={exchangeRates?.eur || '4.05'} unit="ج.م" trend="down" icon={<FaEuroSign className="text-blue-500" />} />
@@ -590,7 +561,6 @@ export default async function Home() {
                   <PriceItem name="الريال البرازيلي" code="BRL" value={exchangeRates?.brl || '0.68'} unit="ج.م" trend="up" />
                 </PriceSection>
 
-                {/* العملات الرقمية */}
                 <PriceSection title="العملات الرقمية" icon="💎" color="purple">
                   <PriceItem name="بتكوين" code="BTC" value={exchangeRates?.btc || '65,234'} unit="$" trend="up" icon={<FaBitcoin className="text-orange-500" />} />
                   <PriceItem name="إيثريوم" code="ETH" value={exchangeRates?.eth || '3,456'} unit="$" trend="down" />
@@ -600,7 +570,6 @@ export default async function Home() {
                   <PriceItem name="دوجكوين" code="DOGE" value={exchangeRates?.doge || '0.12'} unit="$" trend="up" />
                 </PriceSection>
 
-                {/* المعادن */}
                 <PriceSection title="المعادن النفيسة" icon="🏆" color="yellow">
                   <PriceItem name="الذهب" code="XAU" value={exchangeRates?.gold || '2,350'} unit="$" trend="up" icon={<FaTrophy className="text-yellow-600" />} />
                   <PriceItem name="الفضة" code="XAG" value={exchangeRates?.silver || '28.50'} unit="$" trend="down" />
@@ -608,21 +577,18 @@ export default async function Home() {
                   <PriceItem name="النحاس" code="COP" value={exchangeRates?.copper || '4.15'} unit="$" trend="up" />
                 </PriceSection>
 
-                {/* الطاقة */}
                 <PriceSection title="الطاقة" icon="⛽" color="gray">
                   <PriceItem name="خام برنت" code="BRT" value={exchangeRates?.oil || '85.20'} unit="$" trend="down" icon={<FaOilCan className="text-gray-600" />} />
                   <PriceItem name="خام غرب تكساس" code="WTI" value={exchangeRates?.wti || '80.50'} unit="$" trend="up" />
                   <PriceItem name="الغاز الطبيعي" code="NG" value={exchangeRates?.ng || '2.85'} unit="$" trend="down" />
                 </PriceSection>
 
-                {/* مؤشرات الأسهم */}
                 <PriceSection title="مؤشرات الأسهم" icon="📈" color="red">
                   <PriceItem name="S&P 500" code="SPX" value={exchangeRates?.sp500 || '5,234'} unit="نقطة" trend="up" />
                   <PriceItem name="Nasdaq" code="IXIC" value={exchangeRates?.nasdaq || '18,450'} unit="نقطة" trend="up" />
                   <PriceItem name="Dow Jones" code="DJI" value={exchangeRates?.dowjones || '39,870'} unit="نقطة" trend="down" />
                 </PriceSection>
 
-                {/* وقت آخر تحديث */}
                 <div className="mt-3 pt-2 text-center border-t border-gray-200 dark:border-gray-700">
                   <p className="text-[9px] text-gray-400">
                     آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}
@@ -648,22 +614,12 @@ export default async function Home() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
-              <p className="text-orange-400 text-xs font-bold mb-1">العنوان الرئيسي</p>
-              <p className="text-white text-xs">التطورات التكنولوجية في المنطقة العربية</p>
-            </div>
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
-              <p className="text-blue-400 text-xs font-bold mb-1">الاقتصاد اليوم</p>
-              <p className="text-white text-xs">أسعار النفط ترتفع وسط توقعات إيجابية</p>
-            </div>
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
-              <p className="text-green-400 text-xs font-bold mb-1">التكنولوجيا</p>
-              <p className="text-white text-xs">ثورة الذكاء الاصطناعي تشعل المنافسة</p>
-            </div>
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
-              <p className="text-purple-400 text-xs font-bold mb-1">الرياضة</p>
-              <p className="text-white text-xs">استعدادات مكثفة للمباراة النهائية</p>
-            </div>
+            {dailyBrief.map((item, idx) => (
+              <a key={idx} href={item.link_url || '#'} className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
+                <p className="text-orange-400 text-xs font-bold mb-1">{item.section_title}</p>
+                <p className="text-white text-xs">{item.title}</p>
+              </a>
+            ))}
           </div>
         </div>
         <div className="border-t border-gray-800">
