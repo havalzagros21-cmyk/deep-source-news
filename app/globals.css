@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   الطبقة الأساسية (Base Layer)
+   ======================================== */
+@layer base {
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(145deg, #f5f7fc 0%, #eef2f8 100%);
+    @apply text-gray-900 transition-colors duration-300;
+  }
+
+  .dark body {
+    background: linear-gradient(145deg, #0a0f1a 0%, #111827 100%);
+    @apply text-gray-200;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  a {
+    @apply transition-all duration-200;
+  }
+
+  img {
+    @apply max-w-full h-auto;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-200 dark:bg-gray-800 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-red-500 rounded-full hover:bg-red-600 transition-colors;
+  }
+}
+
+/* ========================================
+   الحاوية المخصصة
+   ======================================== */
+.container-custom {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* ========================================
+   الطبقة المتوسطة (Components Layer)
+   ======================================== */
+@layer components {
+  .btn-primary {
+    @apply bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+
+  .category-badge {
+    @apply text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider bg-red-50 dark:bg-red-950/30 px-2.5 py-1 rounded-full;
+  }
+
+  .article-content {
+    @apply prose dark:prose-invert max-w-none text-lg leading-relaxed;
+  }
+
+  .article-content h1 {
+    @apply text-3xl font-bold mt-8 mb-4;
+  }
+
+  .article-content h2 {
+    @apply text-2xl font-bold mt-6 mb-3;
+  }
+
+  .article-content h3 {
+    @apply text-xl font-bold mt-4 mb-2;
+  }
+
+  .article-content p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .article-content ul, .article-content ol {
+    @apply mb-4 pr-6 space-y-2;
+  }
+
+  .article-content li {
+    @apply list-disc;
+  }
+
+  .article-content blockquote {
+    @apply border-r-4 border-red-500 pr-4 my-4 text-gray-600 dark:text-gray-400 italic;
+  }
+
+  .article-content img {
+    @apply rounded-lg my-4 w-full;
+  }
+
+  .article-content a {
+    @apply text-red-600 hover:text-red-700 underline;
+  }
+}
+
+/* ========================================
+   الطبقة العليا (Utilities Layer)
+   ======================================== */
+@layer utilities {
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
+  .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+  .animate-fadeInDown { animation: fadeInDown 0.4s ease-out forwards; }
+  .animate-fadeInUp { animation: fadeInUp 0.5s ease-out forwards; }
+  .animate-slideInRight { animation: slideInRight 0.4s ease-out forwards; }
+  .animate-slideInLeft { animation: slideInLeft 0.4s ease-out forwards; }
+  .animate-pulse-slow { animation: pulse 3s ease-in-out infinite; }
+  .animate-spin-slow { animation: spin 3s linear infinite; }
+  .animate-bounce-slow { animation: bounce 2s ease-in-out infinite; }
+  .animate-float { animation: float 3s ease-in-out infinite; }
+  .animate-wiggle { animation: wiggle 0.5s ease-in-out infinite; }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-500 { animation-delay: 500ms; }
+
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .glass {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #dc2626, #f97316);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .image-zoom {
+    @apply transition-transform duration-500 hover:scale-110;
+  }
+}
+
+/* ========================================
+   تحسينات إضافية للجوال
+   ======================================== */
+@media (max-width: 768px) {
+  .container-custom {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .article-content {
+    font-size: 1rem;
+  }
+
+  .article-content h1 {
+    font-size: 1.75rem;
+  }
+
+  .article-content h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+::selection {
+  @apply bg-red-500 text-white;
+}
+
+::-moz-selection {
+  @apply bg-red-500 text-white;
+}
+
+*:focus {
+  @apply outline-none ring-2 ring-red-500 ring-offset-2 dark:ring-offset-gray-900;
+}
+
+html, body {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.dark .prose p,
+.dark .prose li,
+.dark .prose span {
+  @apply text-gray-300;
+}
+
+.dark .prose strong {
+  @apply text-white;
+}
+
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4 {
+  @apply text-white;
+}
