@@ -441,7 +441,7 @@ export default async function Home() {
                       {news.image && <img src={news.image} alt={news.title} className="w-full h-44 object-cover" />}
                       <div className="p-4">
                         <span className="text-red-500 text-xs font-bold">{news.category || 'أخبار'}</span>
-                        <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600}>{news.title}</h3>
+                        <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
                         <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-2">{news.description || news.content?.substring(0, 100)}...</p>
                         <span className="text-gray-400 text-xs mt-2 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
                       </div>
@@ -464,7 +464,7 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - الأسعار العالمية (3 أعمدة: أسعار - أخبار - فارغ) */}
+      {/* القالب الثالث - الأسعار العالمية */}
       {/* ======================================== */}
       <div className="container-custom py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
