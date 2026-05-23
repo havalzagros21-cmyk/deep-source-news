@@ -2,13 +2,19 @@ import { supabase } from '../lib/supabase'
 import NewsCard from '../components/NewsCard'
 import NewsTicker from '../components/NewsTicker'
 import ImageSlider from '../components/ImageSlider'
-import { FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus } from 'react-icons/fa'
+import { 
+  FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, 
+  FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, 
+  FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus, FaBitcoin
+} from 'react-icons/fa'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-// مكون عرض الأسعار
-function PriceItem({ name, code, value, unit, trend }: any) {
+// ============================================================
+// مكونات الأسعار العالمية
+// ============================================================
+function PriceItem({ name, code, value, unit, trend, icon }: any) {
   const getTrendIcon = () => {
     if (trend === 'up') return <FaArrowUp className="text-green-500 text-[10px] animate-bounce" />
     if (trend === 'down') return <FaArrowDown className="text-red-500 text-[10px] animate-pulse" />
@@ -24,6 +30,7 @@ function PriceItem({ name, code, value, unit, trend }: any) {
   return (
     <div className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-800/50 last:border-0">
       <div className="flex items-center gap-1.5">
+        {icon && <span className="text-[10px]">{icon}</span>}
         <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{name}</span>
         <span className="text-[9px] text-gray-400">({code})</span>
       </div>
@@ -36,12 +43,27 @@ function PriceItem({ name, code, value, unit, trend }: any) {
   )
 }
 
+function PriceSection({ title, icon, children, color = "blue" }: any) {
+  const colorClasses: any = {
+    green: "border-green-500", blue: "border-blue-500", purple: "border-purple-500",
+    yellow: "border-yellow-500", gray: "border-gray-500", red: "border-red-500"
+  }
+  return (
+    <div className="mb-3">
+      <div className={`flex items-center gap-1.5 mb-1.5 border-r-2 ${colorClasses[color]} pr-2`}>
+        {icon}
+        <h4 className="text-[11px] font-bold text-gray-700 dark:text-gray-300">{title}</h4>
+      </div>
+      <div className="space-y-0">{children}</div>
+    </div>
+  )
+}
+
+// ============================================================
+// دوال جلب البيانات
+// ============================================================
 async function getHeroSection() {
-  const { data, error } = await supabase
-    .from('hero_section')
-    .select('*')
-    .single()
-  
+  const { data, error } = await supabase.from('hero_section').select('*').single()
   if (error || !data) {
     return {
       title: 'آخر الأخبار العميقة',
@@ -137,19 +159,22 @@ async function getExchangeRates() {
     .order('order_index', { ascending: true })
   
   if (error || !data || data.length === 0) {
-    return {
-      usd: 3.75, eur: 4.05, gbp: 4.75, sar: 3.75, kwd: 12.25,
-      gold: 2350, oil: 85.20,
-    }
+    return { usd: 3.75, eur: 4.05, gbp: 4.75, sar: 3.75, kwd: 12.25, gold: 2350, oil: 85.20 }
   }
   
   const rates: any = {}
-  data.forEach((item: any) => {
-    rates[item.code.toLowerCase()] = item.value
-  })
+  data.forEach((item: any) => { rates[item.code.toLowerCase()] = item.value })
   return rates
 }
 
+async function getDailyBrief() {
+  const { data } = await supabase.from('daily_brief').select('*').order('order_index', { ascending: true })
+  return data || []
+}
+
+// ============================================================
+// النصوص الثابتة
+// ============================================================
 const economicAnalysisText = `تحليلات اقتصادية حصرية يقدمها فريق ديب سورس نيوز.`
 const ourVisionText = `نسعى لتقديم محتوى إخباري عميق ومستقل يعزز الوعي ويدعم المعرفة.`
 const zodiacTodayText = `🍀 برج الحمل: يوم مليء بالطاقة الإيجابية والفرص الجديدة.
@@ -166,8 +191,11 @@ const stats = [
   { icon: FaCalendarAlt, value: 'منذ 2024', label: 'الانطلاق' },
 ]
 
+// ============================================================
+// المكون الرئيسي
+// ============================================================
 export default async function Home() {
-  const [hero, breakingNews, mainNews, sideNews, smallNews, largeNews, regularNews, extraNews, sliderNews, exchangeRates] = await Promise.all([
+  const [hero, breakingNews, mainNews, sideNews, smallNews, largeNews, regularNews, extraNews, sliderNews, exchangeRates, dailyBrief] = await Promise.all([
     getHeroSection(),
     getBreakingNews(),
     getMainNews(),
@@ -178,6 +206,7 @@ export default async function Home() {
     getExtraNews(),
     getSliderNews(),
     getExchangeRates(),
+    getDailyBrief(),
   ])
 
   const showHero = hero.is_enabled !== false
@@ -253,9 +282,7 @@ export default async function Home() {
         {icon} {title}
       </h4>
       <div className="prose prose-sm dark:prose-invert max-w-none">
-        <p className="text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed">
-          {content}
-        </p>
+        <p className="text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed">{content}</p>
       </div>
     </div>
   )
@@ -408,7 +435,7 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - مع الأسعار العالمية */}
+      {/* القالب الثالث - الأسعار العالمية الكاملة */}
       {/* ======================================== */}
       <div className="container-custom py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -458,20 +485,68 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* العمود الأيمن - الأسعار العالمية */}
+          {/* العمود الأيمن - الأسعار العالمية الكاملة */}
           <div className="lg:col-span-3 order-2 lg:order-2">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
               <div className="bg-gradient-to-r from-green-600 to-green-700 px-3 py-2">
                 <h3 className="text-white font-bold text-sm flex items-center gap-2"><FaGlobe size={12} /> الأسعار العالمية</h3>
               </div>
-              <div className="p-3">
-                <PriceItem name="الدولار الأمريكي" code="USD" value={exchangeRates?.usd || '3.75'} unit="ج.م" trend="up" />
-                <PriceItem name="اليورو" code="EUR" value={exchangeRates?.eur || '4.05'} unit="ج.م" trend="down" />
-                <PriceItem name="الجنيه الإسترليني" code="GBP" value={exchangeRates?.gbp || '4.75'} unit="ج.م" trend="up" />
-                <PriceItem name="الريال السعودي" code="SAR" value={exchangeRates?.sar || '3.75'} unit="ر.س" trend="up" />
-                <PriceItem name="الدينار الكويتي" code="KWD" value={exchangeRates?.kwd || '12.25'} unit="د.ك" trend="up" />
-                <PriceItem name="الذهب" code="XAU" value={exchangeRates?.gold || '2,350'} unit="$" trend="up" />
-                <PriceItem name="خام برنت" code="BRT" value={exchangeRates?.oil || '85.20'} unit="$" trend="down" />
+              <div className="p-3 max-h-[550px] overflow-y-auto">
+                
+                <PriceSection title="العملات العربية" icon="🇸🇦" color="green">
+                  <PriceItem name="الريال السعودي" code="SAR" value={exchangeRates?.sar || '3.75'} unit="ر.س" trend="up" />
+                  <PriceItem name="الدرهم الإماراتي" code="AED" value={exchangeRates?.aed || '1.02'} unit="د.إ" trend="stable" />
+                  <PriceItem name="الدينار الكويتي" code="KWD" value={exchangeRates?.kwd || '12.25'} unit="د.ك" trend="up" />
+                  <PriceItem name="الريال القطري" code="QAR" value={exchangeRates?.qar || '1.03'} unit="ر.ق" trend="down" />
+                  <PriceItem name="الدينار البحريني" code="BHD" value={exchangeRates?.bhd || '9.95'} unit="د.ب" trend="up" />
+                  <PriceItem name="الريال العماني" code="OMR" value={exchangeRates?.omr || '9.74'} unit="ر.ع" trend="stable" />
+                  <PriceItem name="الدينار الأردني" code="JOD" value={exchangeRates?.jod || '5.29'} unit="د.ا" trend="up" />
+                  <PriceItem name="الجنيه السوداني" code="SDG" value={exchangeRates?.sdg || '0.062'} unit="ج.س" trend="down" />
+                </PriceSection>
+
+                <PriceSection title="العملات الأجنبية" icon="🌍" color="blue">
+                  <PriceItem name="الدولار الأمريكي" code="USD" value={exchangeRates?.usd || '3.75'} unit="ج.م" trend="up" icon={<FaDollarSign className="text-yellow-500" />} />
+                  <PriceItem name="اليورو" code="EUR" value={exchangeRates?.eur || '4.05'} unit="ج.م" trend="down" icon={<FaEuroSign className="text-blue-500" />} />
+                  <PriceItem name="الجنيه الإسترليني" code="GBP" value={exchangeRates?.gbp || '4.75'} unit="ج.م" trend="up" icon={<FaPoundSign className="text-purple-500" />} />
+                  <PriceItem name="الفرنك السويسري" code="CHF" value={exchangeRates?.chf || '4.20'} unit="ج.م" trend="down" />
+                  <PriceItem name="الدولار الكندي" code="CAD" value={exchangeRates?.cad || '2.75'} unit="ج.م" trend="up" />
+                  <PriceItem name="الدولار الأسترالي" code="AUD" value={exchangeRates?.aud || '2.45'} unit="ج.م" trend="down" />
+                  <PriceItem name="الين الياباني" code="JPY" value={exchangeRates?.jpy || '0.025'} unit="ج.م" trend="stable" icon={<FaYenSign className="text-red-500" />} />
+                  <PriceItem name="اليوان الصيني" code="CNY" value={exchangeRates?.cny || '0.52'} unit="ج.م" trend="up" />
+                  <PriceItem name="الليرة التركية" code="TRY" value={exchangeRates?.try || '0.11'} unit="ج.م" trend="down" />
+                  <PriceItem name="الروبل الروسي" code="RUB" value={exchangeRates?.rub || '0.041'} unit="ج.م" trend="down" />
+                  <PriceItem name="الروبية الهندية" code="INR" value={exchangeRates?.inr || '0.045'} unit="ج.م" trend="stable" />
+                  <PriceItem name="الريال البرازيلي" code="BRL" value={exchangeRates?.brl || '0.68'} unit="ج.م" trend="up" />
+                </PriceSection>
+
+                <PriceSection title="العملات الرقمية" icon="💎" color="purple">
+                  <PriceItem name="بتكوين" code="BTC" value={exchangeRates?.btc || '65,234'} unit="$" trend="up" icon={<FaBitcoin className="text-orange-500" />} />
+                  <PriceItem name="إيثريوم" code="ETH" value={exchangeRates?.eth || '3,456'} unit="$" trend="down" />
+                  <PriceItem name="ريبل" code="XRP" value={exchangeRates?.xrp || '0.62'} unit="$" trend="up" />
+                  <PriceItem name="سولانا" code="SOL" value={exchangeRates?.sol || '145'} unit="$" trend="up" />
+                  <PriceItem name="كاردانو" code="ADA" value={exchangeRates?.ada || '0.45'} unit="$" trend="down" />
+                  <PriceItem name="دوجكوين" code="DOGE" value={exchangeRates?.doge || '0.12'} unit="$" trend="up" />
+                </PriceSection>
+
+                <PriceSection title="المعادن النفيسة" icon="🏆" color="yellow">
+                  <PriceItem name="الذهب" code="XAU" value={exchangeRates?.gold || '2,350'} unit="$" trend="up" icon={<FaTrophy className="text-yellow-600" />} />
+                  <PriceItem name="الفضة" code="XAG" value={exchangeRates?.silver || '28.50'} unit="$" trend="down" />
+                  <PriceItem name="البلاتين" code="XPT" value={exchangeRates?.platinum || '920'} unit="$" trend="up" />
+                  <PriceItem name="النحاس" code="COP" value={exchangeRates?.copper || '4.15'} unit="$" trend="up" />
+                </PriceSection>
+
+                <PriceSection title="الطاقة" icon="⛽" color="gray">
+                  <PriceItem name="خام برنت" code="BRT" value={exchangeRates?.oil || '85.20'} unit="$" trend="down" icon={<FaOilCan className="text-gray-600" />} />
+                  <PriceItem name="خام غرب تكساس" code="WTI" value={exchangeRates?.wti || '80.50'} unit="$" trend="up" />
+                  <PriceItem name="الغاز الطبيعي" code="NG" value={exchangeRates?.ng || '2.85'} unit="$" trend="down" />
+                </PriceSection>
+
+                <PriceSection title="مؤشرات الأسهم" icon="📈" color="red">
+                  <PriceItem name="S&P 500" code="SPX" value={exchangeRates?.sp500 || '5,234'} unit="نقطة" trend="up" />
+                  <PriceItem name="Nasdaq" code="IXIC" value={exchangeRates?.nasdaq || '18,450'} unit="نقطة" trend="up" />
+                  <PriceItem name="Dow Jones" code="DJI" value={exchangeRates?.dowjones || '39,870'} unit="نقطة" trend="down" />
+                </PriceSection>
+
                 <div className="mt-3 pt-2 text-center border-t border-gray-200 dark:border-gray-700">
                   <p className="text-[9px] text-gray-400">آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}</p>
                 </div>
@@ -489,10 +564,19 @@ export default async function Home() {
             <div className="flex items-center gap-2 text-sm text-gray-400"><FaCalendarAlt /><span>{new Date().toLocaleDateString('ar-EG')}</span></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-orange-400 text-xs font-bold mb-1">العنوان الرئيسي</p><p className="text-white text-xs">التطورات التكنولوجية</p></div>
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-blue-400 text-xs font-bold mb-1">الاقتصاد اليوم</p><p className="text-white text-xs">أسعار النفط ترتفع</p></div>
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-green-400 text-xs font-bold mb-1">التكنولوجيا</p><p className="text-white text-xs">ثورة الذكاء الاصطناعي</p></div>
-            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-purple-400 text-xs font-bold mb-1">الرياضة</p><p className="text-white text-xs">استعدادات المباراة النهائية</p></div>
+            {dailyBrief.length > 0 ? dailyBrief.map((item, idx) => (
+              <a key={idx} href={item.link_url || '#'} className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
+                <p className="text-orange-400 text-xs font-bold mb-1">{item.section_title}</p>
+                <p className="text-white text-xs">{item.title}</p>
+              </a>
+            )) : (
+              <>
+                <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-orange-400 text-xs font-bold mb-1">العنوان الرئيسي</p><p className="text-white text-xs">التطورات التكنولوجية</p></div>
+                <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-blue-400 text-xs font-bold mb-1">الاقتصاد اليوم</p><p className="text-white text-xs">أسعار النفط ترتفع</p></div>
+                <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-green-400 text-xs font-bold mb-1">التكنولوجيا</p><p className="text-white text-xs">ثورة الذكاء الاصطناعي</p></div>
+                <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer"><p className="text-purple-400 text-xs font-bold mb-1">الرياضة</p><p className="text-white text-xs">استعدادات المباراة النهائية</p></div>
+              </>
+            )}
           </div>
         </div>
         <div className="border-t border-gray-800">
