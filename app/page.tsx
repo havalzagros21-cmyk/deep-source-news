@@ -219,19 +219,35 @@ export default async function Home() {
 
   const showHero = hero.is_enabled !== false
 
+  // تصفية الأخبار حسب موقع الظهور (position)
   const breakingGroup = breakingNews.slice(0, 4)
   const sideGroup = sideNews.slice(0, 4)
 
+  // تقسيم الأخبار حسب موقع الظهور المحدد من لوحة التحكم
+  const allNews = [...smallNews, ...largeNews, ...regularNews]
+  
+  // أخبار القالب الأول (تحت السلايدر)
+  const template1News = allNews.filter(n => n.position === 'template1_top' || n.position === 'auto').slice(0, 3)
+  const template1LargeNews = allNews.filter(n => n.position === 'template1_bottom' || n.position === 'auto').slice(0, 3)
+  
+  // أخبار القالب الثاني
+  const template2News = allNews.filter(n => n.position === 'template2' || n.position === 'auto').slice(0, 3)
+  const template2LargeNews = allNews.filter(n => n.position === 'template2' || n.position === 'auto').slice(3, 6)
+  
+  // أخبار القالب الثالث
+  const template3News = allNews.filter(n => n.position === 'template3' || n.position === 'auto').slice(0, 3)
+  const template3LargeNews = allNews.filter(n => n.position === 'template3' || n.position === 'auto').slice(3, 6)
+
   const smallGroups = [
-    smallNews.slice(0, 3),
-    smallNews.slice(3, 6),
-    smallNews.slice(6, 9),
+    template1News,
+    template2News,
+    template3News,
   ]
 
   const largeGroups = [
-    largeNews.slice(0, 3),
-    largeNews.slice(3, 6),
-    largeNews.slice(6, 9),
+    template1LargeNews,
+    template2LargeNews,
+    template3LargeNews,
   ]
 
   const regularGroup1 = regularNews.slice(0, 4)
@@ -486,12 +502,11 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - بدون فراغ (أخبار 9 أعمدة + أسعار 3 أعمدة) */}
+      {/* القالب الثالث */}
       {/* ======================================== */}
       <div className="container-custom py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
-          {/* العمود الأوسط - أخبار عادية (9 أعمدة) */}
           <div className="lg:col-span-9 order-1 lg:order-1">
             {mainNews && (
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
@@ -537,7 +552,7 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* العمود الأيمن - الأسعار العالمية (3 أعمدة) */}
+          {/* العمود الأيمن - الأسعار العالمية */}
           <div className="lg:col-span-3 order-2 lg:order-2">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
               <div className="bg-gradient-to-r from-green-600 to-green-700 px-3 py-2">
