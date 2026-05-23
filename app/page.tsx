@@ -2,7 +2,11 @@ import { supabase } from '../lib/supabase'
 import NewsCard from '../components/NewsCard'
 import NewsTicker from '../components/NewsTicker'
 import ImageSlider from '../components/ImageSlider'
-import { FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus } from 'react-icons/fa'
+import { 
+  FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, 
+  FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, 
+  FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus, FaBitcoin 
+} from 'react-icons/fa'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -21,17 +25,17 @@ function PriceItem({ name, code, value, unit, trend, icon }: any) {
   }
 
   return (
-    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group">
-      <div className="flex items-center gap-2">
-        {icon && <span className="text-sm">{icon}</span>}
+    <div className="flex justify-between items-center p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group">
+      <div className="flex items-center gap-1.5">
+        {icon && <span className="text-xs">{icon}</span>}
         <div>
-          <span className="text-sm font-medium">{name}</span>
-          <span className="text-xs text-gray-400 mr-1">({code})</span>
+          <span className="text-xs font-medium">{name}</span>
+          <span className="text-[10px] text-gray-400 mr-1">({code})</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className={`font-bold ${getTrendColor()}`}>{value}</span>
-        <span className="text-xs text-gray-500">{unit}</span>
+      <div className="flex items-center gap-1">
+        <span className={`font-bold text-xs ${getTrendColor()}`}>{value}</span>
+        <span className="text-[10px] text-gray-500">{unit}</span>
         {getTrendIcon()}
       </div>
     </div>
@@ -140,13 +144,22 @@ async function getExchangeRates() {
   
   if (error || !data || data.length === 0) {
     return {
-      sar: 3.75, aed: 1.02, kwd: 12.25, qar: 1.03,
-      usd: 3.75, eur: 4.05, gbp: 4.75, jpy: 0.025,
-      gold: 2350, silver: 28.50, oil: 85.20,
+      // العملات العربية
+      sar: 3.75, aed: 1.02, kwd: 12.25, qar: 1.03, bhd: 9.95, omr: 9.74, jod: 5.29, sdg: 0.062,
+      // العملات الأجنبية
+      usd: 3.75, eur: 4.05, gbp: 4.75, jpy: 0.025, chf: 4.20, cad: 2.75, aud: 2.45, cny: 0.52,
+      try: 0.11, rub: 0.041, inr: 0.045, brl: 0.68,
+      // العملات الرقمية
+      btc: 65234, eth: 3456, xrp: 0.62, sol: 145, ada: 0.45, doge: 0.12,
+      // المعادن
+      gold: 2350, silver: 28.50, platinum: 920, copper: 4.15,
+      // الطاقة
+      oil: 85.20, wti: 80.50, ng: 2.85,
+      // المؤشرات
+      sp500: 5234, nasdaq: 18450, dowjones: 39870,
     }
   }
   
-  // تحويل المصفوفة إلى كائن
   const rates: any = {}
   data.forEach((item: any) => {
     rates[item.code.toLowerCase()] = item.value
@@ -457,17 +470,19 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - الأسعار العالمية */}
+      {/* القالب الثالث - الأسعار العالمية الكاملة (بدون قوائم تقنية) */}
       {/* ======================================== */}
       <div className="container-custom py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
+          {/* العمود الأيمن - الأسعار العالمية الكاملة */}
           <div className="lg:col-span-3 order-2 lg:order-1">
-            <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full">
-              <h3 className="text-green-600 dark:text-green-400 font-bold text-lg mb-4 pb-2 border-b border-green-200 dark:border-green-800 flex items-center gap-2">
+            <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full overflow-y-auto max-h-[600px]">
+              <h3 className="text-green-600 dark:text-green-400 font-bold text-lg mb-3 pb-2 border-b border-green-200 dark:border-green-800 flex items-center gap-2 sticky top-0 bg-white/50 dark:bg-gray-800/50">
                 <FaGlobe /> الأسعار العالمية
               </h3>
               
+              {/* العملات العربية */}
               <div className="mb-3">
                 <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-green-500 pr-2">🇸🇦 العملات العربية</h4>
                 <div className="space-y-1">
@@ -475,25 +490,73 @@ export default async function Home() {
                   <PriceItem name="الدرهم الإماراتي" code="AED" value={exchangeRates?.aed || '1.02'} unit="د.إ" trend="stable" />
                   <PriceItem name="الدينار الكويتي" code="KWD" value={exchangeRates?.kwd || '12.25'} unit="د.ك" trend="up" />
                   <PriceItem name="الريال القطري" code="QAR" value={exchangeRates?.qar || '1.03'} unit="ر.ق" trend="down" />
+                  <PriceItem name="الدينار البحريني" code="BHD" value={exchangeRates?.bhd || '9.95'} unit="د.ب" trend="up" />
+                  <PriceItem name="الريال العماني" code="OMR" value={exchangeRates?.omr || '9.74'} unit="ر.ع" trend="stable" />
+                  <PriceItem name="الدينار الأردني" code="JOD" value={exchangeRates?.jod || '5.29'} unit="د.ا" trend="up" />
+                  <PriceItem name="الجنيه السوداني" code="SDG" value={exchangeRates?.sdg || '0.062'} unit="ج.س" trend="down" />
                 </div>
               </div>
 
+              {/* العملات الأجنبية */}
               <div className="mb-3">
                 <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-blue-500 pr-2">🌍 العملات الأجنبية</h4>
                 <div className="space-y-1">
                   <PriceItem name="الدولار الأمريكي" code="USD" value={exchangeRates?.usd || '3.75'} unit="ج.م" trend="up" icon={<FaDollarSign className="text-yellow-500" />} />
                   <PriceItem name="اليورو" code="EUR" value={exchangeRates?.eur || '4.05'} unit="ج.م" trend="down" icon={<FaEuroSign className="text-blue-500" />} />
                   <PriceItem name="الجنيه الإسترليني" code="GBP" value={exchangeRates?.gbp || '4.75'} unit="ج.م" trend="up" icon={<FaPoundSign className="text-purple-500" />} />
+                  <PriceItem name="الفرنك السويسري" code="CHF" value={exchangeRates?.chf || '4.20'} unit="ج.م" trend="down" />
+                  <PriceItem name="الدولار الكندي" code="CAD" value={exchangeRates?.cad || '2.75'} unit="ج.م" trend="up" />
+                  <PriceItem name="الدولار الأسترالي" code="AUD" value={exchangeRates?.aud || '2.45'} unit="ج.م" trend="down" />
                   <PriceItem name="الين الياباني" code="JPY" value={exchangeRates?.jpy || '0.025'} unit="ج.م" trend="stable" icon={<FaYenSign className="text-red-500" />} />
+                  <PriceItem name="اليوان الصيني" code="CNY" value={exchangeRates?.cny || '0.52'} unit="ج.م" trend="up" />
+                  <PriceItem name="الليرة التركية" code="TRY" value={exchangeRates?.try || '0.11'} unit="ج.م" trend="down" />
+                  <PriceItem name="الروبل الروسي" code="RUB" value={exchangeRates?.rub || '0.041'} unit="ج.م" trend="down" />
+                  <PriceItem name="الروبية الهندية" code="INR" value={exchangeRates?.inr || '0.045'} unit="ج.م" trend="stable" />
+                  <PriceItem name="الريال البرازيلي" code="BRL" value={exchangeRates?.brl || '0.68'} unit="ج.م" trend="up" />
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-yellow-500 pr-2">🏆 المعادن والطاقة</h4>
+              {/* العملات الرقمية */}
+              <div className="mb-3">
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-purple-500 pr-2">💎 العملات الرقمية</h4>
+                <div className="space-y-1">
+                  <PriceItem name="بتكوين" code="BTC" value={exchangeRates?.btc || '65,234'} unit="$" trend="up" icon={<FaBitcoin className="text-orange-500" />} />
+                  <PriceItem name="إيثريوم" code="ETH" value={exchangeRates?.eth || '3,456'} unit="$" trend="down" />
+                  <PriceItem name="ريبل" code="XRP" value={exchangeRates?.xrp || '0.62'} unit="$" trend="up" />
+                  <PriceItem name="سولانا" code="SOL" value={exchangeRates?.sol || '145'} unit="$" trend="up" />
+                  <PriceItem name="كاردانو" code="ADA" value={exchangeRates?.ada || '0.45'} unit="$" trend="down" />
+                  <PriceItem name="دوجكوين" code="DOGE" value={exchangeRates?.doge || '0.12'} unit="$" trend="up" />
+                </div>
+              </div>
+
+              {/* المعادن */}
+              <div className="mb-3">
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-yellow-500 pr-2">🏆 المعادن النفيسة</h4>
                 <div className="space-y-1">
                   <PriceItem name="الذهب" code="XAU" value={exchangeRates?.gold || '2,350'} unit="$" trend="up" icon={<FaTrophy className="text-yellow-600" />} />
                   <PriceItem name="الفضة" code="XAG" value={exchangeRates?.silver || '28.50'} unit="$" trend="down" />
+                  <PriceItem name="البلاتين" code="XPT" value={exchangeRates?.platinum || '920'} unit="$" trend="up" />
+                  <PriceItem name="النحاس" code="COP" value={exchangeRates?.copper || '4.15'} unit="$" trend="up" />
+                </div>
+              </div>
+
+              {/* الطاقة */}
+              <div className="mb-3">
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-gray-500 pr-2">⛽ الطاقة</h4>
+                <div className="space-y-1">
                   <PriceItem name="خام برنت" code="BRT" value={exchangeRates?.oil || '85.20'} unit="$" trend="down" icon={<FaOilCan className="text-gray-600" />} />
+                  <PriceItem name="خام غرب تكساس" code="WTI" value={exchangeRates?.wti || '80.50'} unit="$" trend="up" />
+                  <PriceItem name="الغاز الطبيعي" code="NG" value={exchangeRates?.ng || '2.85'} unit="$" trend="down" />
+                </div>
+              </div>
+
+              {/* مؤشرات الأسهم */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 border-r-2 border-red-500 pr-2">📈 مؤشرات الأسهم</h4>
+                <div className="space-y-1">
+                  <PriceItem name="S&P 500" code="SPX" value={exchangeRates?.sp500 || '5,234'} unit="نقطة" trend="up" />
+                  <PriceItem name="Nasdaq" code="IXIC" value={exchangeRates?.nasdaq || '18,450'} unit="نقطة" trend="up" />
+                  <PriceItem name="Dow Jones" code="DJI" value={exchangeRates?.dowjones || '39,870'} unit="نقطة" trend="down" />
                 </div>
               </div>
               
@@ -505,7 +568,8 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="lg:col-span-6 order-1 lg:order-2">
+          {/* العمود الأوسط - أخبار عادية */}
+          <div className="lg:col-span-9 order-1 lg:order-2">
             {mainNews && (
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                 <a href={`/news/${mainNews.slug}`}>
@@ -550,18 +614,9 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="lg:col-span-3 order-3">
-            <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full">
-              <h3 className="text-cyan-600 dark:text-cyan-400 font-bold text-lg mb-3 pb-2 border-b border-cyan-200 dark:border-cyan-800 flex items-center gap-2">
-                <FaChartBar /> قوائم تقنية
-              </h3>
-              <SmallListWithImage items={regularGroup3} />
-              
-              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <h4 className="text-gray-500 dark:text-gray-400 text-xs font-bold mb-2">أخبار التقنية</h4>
-                <SmallListWithImage items={extraGroup} />
-              </div>
-            </div>
+          {/* العمود الأيسر - فارغ (بدلاً من قوائم تقنية) */}
+          <div className="lg:col-span-0 order-1 lg:order-1">
+            {/* محتوى فارغ */}
           </div>
         </div>
       </div>
@@ -616,7 +671,7 @@ export default async function Home() {
       <style>{`
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
+          50% { transform: translateY(-2px); }
         }
         .animate-bounce {
           animation: bounce 0.5s ease-in-out infinite;
