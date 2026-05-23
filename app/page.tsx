@@ -2,41 +2,10 @@ import { supabase } from '../lib/supabase'
 import NewsCard from '../components/NewsCard'
 import NewsTicker from '../components/NewsTicker'
 import ImageSlider from '../components/ImageSlider'
-import { FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, FaPoundSign, FaYenSign, FaArrowUp, FaArrowDown, FaMinus, FaBitcoin } from 'react-icons/fa'
+import { FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, FaChartBar, FaEye, FaStar } from 'react-icons/fa'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-function PriceItem({ name, code, value, unit, trend, icon }: any) {
-  const getTrendIcon = () => {
-    if (trend === 'up') return <FaArrowUp className="text-green-500 text-xs animate-bounce" />
-    if (trend === 'down') return <FaArrowDown className="text-red-500 text-xs animate-pulse" />
-    return <FaMinus className="text-gray-400 text-xs" />
-  }
-
-  const getTrendColor = () => {
-    if (trend === 'up') return 'text-green-600'
-    if (trend === 'down') return 'text-red-600'
-    return 'text-gray-500'
-  }
-
-  return (
-    <div className="flex justify-between items-center p-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-      <div className="flex items-center gap-1.5">
-        {icon && <span className="text-xs">{icon}</span>}
-        <div>
-          <span className="text-xs font-medium">{name}</span>
-          <span className="text-[10px] text-gray-400 mr-1">({code})</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className={`font-bold text-xs ${getTrendColor()}`}>{value}</span>
-        <span className="text-[10px] text-gray-500">{unit}</span>
-        {getTrendIcon()}
-      </div>
-    </div>
-  )
-}
 
 async function getHeroSection() {
   const { data, error } = await supabase
@@ -101,7 +70,7 @@ async function getLargeNews() {
     .from('news')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(9)  // 9 أخبار فقط (3 مجموعات × 3 أخبار)
+    .limit(9)
   return data || []
 }
 
@@ -132,39 +101,6 @@ async function getSliderNews() {
   return data || []
 }
 
-// جلب 4 أخبار إضافية للقالب الثالث (الأخبار الصغيرة)
-async function getFourthNews() {
-  const { data } = await supabase
-    .from('news')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(4)
-  return data || []
-}
-
-async function getExchangeRates() {
-  const { data, error } = await supabase
-    .from('exchange_rates')
-    .select('*')
-    .order('id', { ascending: false })
-    .limit(1)
-    .single()
-  
-  if (error || !data) {
-    return {
-      sar: 1.00, aed: 1.02, kwd: 12.25, qar: 1.03, bhd: 9.95, omr: 9.74, jod: 5.29, sdg: 0.062,
-      usd: 3.75, eur: 4.05, gbp: 4.75, jpy: 0.025, chf: 4.20, cad: 2.75, aud: 2.45, cny: 0.52,
-      try: 0.11, rub: 0.041, inr: 0.045, brl: 0.68,
-      btc: 65234, eth: 3456, xrp: 0.62, sol: 145, ada: 0.45, doge: 0.12,
-      gold: 2350, silver: 28.50, platinum: 920, copper: 4.15, palladium: 980,
-      oil: 85.20, wti: 80.50, ng: 2.85,
-      sp500: 5234, nasdaq: 18450, dowjones: 39870,
-      updated_at: new Date().toISOString()
-    }
-  }
-  return data
-}
-
 const economicAnalysisText = `هنا يمكنك كتابة التحليلات الاقتصادية التي تريدها. يمكنك كتابة فقرات طويلة، 
 إضافة أخبار، تحليلات، آراء، أي شيء تريد. هذا النص سيظهر في مكان "التحليلات الاقتصادية".`
 
@@ -186,7 +122,7 @@ const stats = [
 ]
 
 export default async function Home() {
-  const [hero, breakingNews, mainNews, sideNews, smallNews, largeNews, regularNews, extraNews, sliderNews, exchangeRates, fourthNews] = await Promise.all([
+  const [hero, breakingNews, mainNews, sideNews, smallNews, largeNews, regularNews, extraNews, sliderNews] = await Promise.all([
     getHeroSection(),
     getBreakingNews(),
     getMainNews(),
@@ -196,8 +132,6 @@ export default async function Home() {
     getRegularNews(),
     getExtraNews(),
     getSliderNews(),
-    getExchangeRates(),
-    getFourthNews(),
   ])
 
   const showHero = hero.is_enabled !== false
@@ -211,7 +145,6 @@ export default async function Home() {
     smallNews.slice(6, 9),
   ]
 
-  // 3 مجموعات كل مجموعة 3 أخبار
   const largeGroups = [
     largeNews.slice(0, 3),
     largeNews.slice(3, 6),
@@ -220,6 +153,8 @@ export default async function Home() {
 
   const regularGroup1 = regularNews.slice(0, 4)
   const regularGroup2 = regularNews.slice(4, 8)
+  const regularGroup3 = regularNews.slice(8, 12)
+  const extraGroup = extraNews.slice(0, 3)
 
   const NumberedListWithImage = ({ items, color = "text-red-600" }: any) => (
     <div className="space-y-3">
@@ -246,6 +181,20 @@ export default async function Home() {
           <div className="flex-1">
             <h4 className="font-medium text-sm line-clamp-2 group-hover:text-red-600">{news.title}</h4>
             <span className="text-gray-400 text-xs">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  )
+
+  const SmallListWithImage = ({ items }: any) => (
+    <div className="space-y-2 mt-2">
+      {items.map((news: any) => (
+        <a key={news.id} href={`/news/${news.slug}`} className="flex gap-2 group hover:bg-red-50 dark:hover:bg-red-950/30 p-1 rounded-lg transition">
+          {news.image && <img src={news.image} alt={news.title} className="w-10 h-10 object-cover rounded" />}
+          <div className="flex-1">
+            <h4 className="font-medium text-xs line-clamp-2 group-hover:text-red-600">{news.title}</h4>
+            <span className="text-gray-400 text-[10px]">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
           </div>
         </a>
       ))}
@@ -454,140 +403,79 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - أسعار عالمية + أخبار وسط (4 أخبار صغيرة + 3 أخبار كبيرة) */}
+      {/* القالب الثالث */}
       {/* ======================================== */}
-      <div className="bg-gray-100 dark:bg-gray-900/30 py-8">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* العمود الأيمن - الأسعار العالمية الموسعة */}
-            <div className="lg:col-span-3 order-2 lg:order-1">
-              <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-xl h-full overflow-y-auto max-h-[600px]">
-                <h3 className="text-green-600 dark:text-green-400 font-bold text-sm mb-2 pb-2 border-b border-green-200 dark:border-green-800 flex items-center gap-1 sticky top-0 bg-white/50 dark:bg-gray-800/50">
-                  <FaGlobe size={12} /> الأسعار العالمية
-                </h3>
-                
-                <div className="mb-2">
-                  <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1 border-r-2 border-green-500 pr-1">🇸🇦 العملات العربية</h4>
-                  <PriceItem name="الريال السعودي" code="SAR" value={exchangeRates?.sar || '1.00'} unit="ر.س" trend="up" />
-                  <PriceItem name="الدرهم الإماراتي" code="AED" value={exchangeRates?.aed || '1.02'} unit="د.إ" trend="stable" />
-                  <PriceItem name="الدينار الكويتي" code="KWD" value={exchangeRates?.kwd || '12.25'} unit="د.ك" trend="up" />
-                  <PriceItem name="الريال القطري" code="QAR" value={exchangeRates?.qar || '1.03'} unit="ر.ق" trend="down" />
-                  <PriceItem name="الدينار البحريني" code="BHD" value={exchangeRates?.bhd || '9.95'} unit="د.ب" trend="up" />
-                  <PriceItem name="الريال العماني" code="OMR" value={exchangeRates?.omr || '9.74'} unit="ر.ع" trend="stable" />
-                  <PriceItem name="الدينار الأردني" code="JOD" value={exchangeRates?.jod || '5.29'} unit="د.ا" trend="up" />
-                  <PriceItem name="الجنيه السوداني" code="SDG" value={exchangeRates?.sdg || '0.062'} unit="ج.س" trend="down" />
-                </div>
-
-                <div className="mb-2">
-                  <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1 border-r-2 border-blue-500 pr-1">🌍 العملات الأجنبية</h4>
-                  <PriceItem name="الدولار الأمريكي" code="USD" value={exchangeRates?.usd || '3.75'} unit="ج.م" trend="up" icon={<FaDollarSign className="text-yellow-500 text-[10px]" />} />
-                  <PriceItem name="اليورو" code="EUR" value={exchangeRates?.eur || '4.05'} unit="ج.م" trend="down" icon={<FaEuroSign className="text-blue-500 text-[10px]" />} />
-                  <PriceItem name="الجنيه الإسترليني" code="GBP" value={exchangeRates?.gbp || '4.75'} unit="ج.م" trend="up" icon={<FaPoundSign className="text-purple-500 text-[10px]" />} />
-                  <PriceItem name="الفرنك السويسري" code="CHF" value={exchangeRates?.chf || '4.20'} unit="ج.م" trend="down" />
-                  <PriceItem name="الدولار الكندي" code="CAD" value={exchangeRates?.cad || '2.75'} unit="ج.م" trend="up" />
-                  <PriceItem name="الدولار الأسترالي" code="AUD" value={exchangeRates?.aud || '2.45'} unit="ج.م" trend="down" />
-                  <PriceItem name="الين الياباني" code="JPY" value={exchangeRates?.jpy || '0.025'} unit="ج.م" trend="stable" icon={<FaYenSign className="text-red-500 text-[10px]" />} />
-                  <PriceItem name="اليوان الصيني" code="CNY" value={exchangeRates?.cny || '0.52'} unit="ج.م" trend="up" />
-                  <PriceItem name="الليرة التركية" code="TRY" value={exchangeRates?.try || '0.11'} unit="ج.م" trend="down" />
-                  <PriceItem name="الروبل الروسي" code="RUB" value={exchangeRates?.rub || '0.041'} unit="ج.م" trend="down" />
-                  <PriceItem name="الروبية الهندية" code="INR" value={exchangeRates?.inr || '0.045'} unit="ج.م" trend="stable" />
-                  <PriceItem name="الريال البرازيلي" code="BRL" value={exchangeRates?.brl || '0.68'} unit="ج.م" trend="up" />
-                </div>
-
-                <div className="mb-2">
-                  <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1 border-r-2 border-purple-500 pr-1">💎 العملات الرقمية</h4>
-                  <PriceItem name="بتكوين" code="BTC" value={exchangeRates?.btc || '65,234'} unit="$" trend="up" icon={<FaBitcoin className="text-orange-500 text-[10px]" />} />
-                  <PriceItem name="إيثريوم" code="ETH" value={exchangeRates?.eth || '3,456'} unit="$" trend="down" />
-                  <PriceItem name="ريبل" code="XRP" value={exchangeRates?.xrp || '0.62'} unit="$" trend="up" />
-                  <PriceItem name="سولانا" code="SOL" value={exchangeRates?.sol || '145'} unit="$" trend="up" />
-                  <PriceItem name="كاردانو" code="ADA" value={exchangeRates?.ada || '0.45'} unit="$" trend="down" />
-                  <PriceItem name="دوجكوين" code="DOGE" value={exchangeRates?.doge || '0.12'} unit="$" trend="up" />
-                </div>
-
-                <div className="mb-2">
-                  <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1 border-r-2 border-yellow-500 pr-1">🏆 المعادن النفيسة</h4>
-                  <PriceItem name="الذهب" code="XAU" value={exchangeRates?.gold || '2,350'} unit="$" trend="up" icon={<FaTrophy className="text-yellow-600 text-[10px]" />} />
-                  <PriceItem name="الفضة" code="XAG" value={exchangeRates?.silver || '28.50'} unit="$" trend="down" />
-                  <PriceItem name="البلاتين" code="XPT" value={exchangeRates?.platinum || '920'} unit="$" trend="up" />
-                  <PriceItem name="البلاديوم" code="XPD" value={exchangeRates?.palladium || '980'} unit="$" trend="down" />
-                  <PriceItem name="النحاس" code="COP" value={exchangeRates?.copper || '4.15'} unit="$" trend="up" />
-                </div>
-
-                <div className="mb-2">
-                  <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1 border-r-2 border-gray-500 pr-1">⛽ الطاقة</h4>
-                  <PriceItem name="خام برنت" code="BRT" value={exchangeRates?.oil || '85.20'} unit="$" trend="down" icon={<FaOilCan className="text-gray-600 text-[10px]" />} />
-                  <PriceItem name="خام غرب تكساس" code="WTI" value={exchangeRates?.wti || '80.50'} unit="$" trend="up" />
-                  <PriceItem name="الغاز الطبيعي" code="NG" value={exchangeRates?.ng || '2.85'} unit="$" trend="down" />
-                </div>
-
-                <div>
-                  <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1 border-r-2 border-red-500 pr-1">📈 مؤشرات الأسهم</h4>
-                  <PriceItem name="S&P 500" code="SPX" value={exchangeRates?.sp500 || '5,234'} unit="نقطة" trend="up" />
-                  <PriceItem name="Nasdaq" code="IXIC" value={exchangeRates?.nasdaq || '18,450'} unit="نقطة" trend="up" />
-                  <PriceItem name="Dow Jones" code="DJI" value={exchangeRates?.dowjones || '39,870'} unit="نقطة" trend="down" />
-                </div>
-                
-                <div className="mt-2 pt-2 text-center border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-[9px] text-gray-400">
-                    آخر تحديث: {exchangeRates?.updated_at ? new Date(exchangeRates.updated_at).toLocaleString('ar-EG') : new Date().toLocaleTimeString('ar-EG')}
-                  </p>
-                </div>
+      <div className="container-custom py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <div className="lg:col-span-3 order-2 lg:order-1">
+            <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full">
+              <h3 className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-4 pb-2 border-b border-amber-200 dark:border-amber-800 flex items-center gap-2">
+                <FaStar /> أبراج اليوم
+              </h3>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+                  {zodiacTodayText}
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* العمود الأوسط - أخبار عادية (مع 4 أخبار صغيرة + 3 أخبار كبيرة) */}
-            <div className="lg:col-span-9 order-1 lg:order-2">
-              {mainNews && (
-                <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
-                  <a href={`/news/${mainNews.slug}`}>
-                    {mainNews.image && <img src={mainNews.image} alt={mainNews.title} className="w-full h-80 object-cover" />}
-                    <div className="p-5">
-                      <span className="text-red-500 text-xs font-bold">{mainNews.category || 'أخبار'}</span>
-                      <h2 className="font-bold text-2xl mt-2 line-clamp-2 group-hover:text-red-600">{mainNews.title}</h2>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{mainNews.description || mainNews.content?.substring(0, 150)}...</p>
-                      <span className="text-gray-400 text-xs mt-3 block">{new Date(mainNews.created_at).toLocaleDateString('ar-EG')}</span>
+          <div className="lg:col-span-6 order-1 lg:order-2">
+            {mainNews && (
+              <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
+                <a href={`/news/${mainNews.slug}`}>
+                  {mainNews.image && <img src={mainNews.image} alt={mainNews.title} className="w-full h-80 object-cover" />}
+                  <div className="p-5">
+                    <span className="text-red-500 text-xs font-bold">{mainNews.category || 'أخبار'}</span>
+                    <h2 className="font-bold text-2xl mt-2 line-clamp-2 group-hover:text-red-600">{mainNews.title}</h2>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{mainNews.description || mainNews.content?.substring(0, 150)}...</p>
+                    <span className="text-gray-400 text-xs mt-3 block">{new Date(mainNews.created_at).toLocaleDateString('ar-EG')}</span>
+                  </div>
+                </a>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              {smallGroups[2].map((news) => (
+                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
+                  <a href={`/news/${news.slug}`} className="flex gap-3">
+                    {news.image && <img src={news.image} alt={news.title} className="w-16 h-16 object-cover rounded" />}
+                    <div className="flex-1">
+                      <span className="text-red-500 text-xs font-bold">{news.category || 'أخبار'}</span>
+                      <h4 className="font-bold text-sm line-clamp-2 mt-1 group-hover:text-red-600">{news.title}</h4>
+                      <span className="text-gray-400 text-xs">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
                     </div>
                   </a>
                 </div>
-              )}
-              
-              {/* 4 أخبار صغيرة - تملأ العرض */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                {fourthNews.slice(0, 4).map((news) => (
-                  <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:shadow-md transition group">
-                    <a href={`/news/${news.slug}`}>
-                      <div className="relative h-36">
-                        {news.image && <img src={news.image} alt={news.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />}
-                        <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded">
-                          {news.category || 'أخبار'}
-                        </span>
-                      </div>
-                      <div className="p-2">
-                        <h3 className="font-bold text-xs line-clamp-2 group-hover:text-red-600 transition">{news.title}</h3>
-                        <p className="text-gray-500 dark:text-gray-400 text-[10px] mt-1 line-clamp-2">{news.description || news.content?.substring(0, 60)}...</p>
-                        <span className="text-gray-400 text-[9px] mt-1 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
-                      </div>
-                    </a>
-                  </div>
-                ))}
-              </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              {largeGroups[2].map((news) => (
+                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
+                  <a href={`/news/${news.slug}`}>
+                    {news.image && <img src={news.image} alt={news.title} className="w-full h-44 object-cover" />}
+                    <div className="p-4">
+                      <span className="text-red-500 text-xs font-bold">{news.category || 'أخبار'}</span>
+                      <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-2">{news.description || news.content?.substring(0, 100)}...</p>
+                      <span className="text-gray-400 text-xs mt-2 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
+                    </div>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
 
-              {/* 3 أخبار كبيرة - تملأ العرض (3 أعمدة) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                {largeGroups[2].map((news) => (
-                  <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
-                    <a href={`/news/${news.slug}`}>
-                      {news.image && <img src={news.image} alt={news.title} className="w-full h-44 object-cover" />}
-                      <div className="p-4">
-                        <span className="text-red-500 text-xs font-bold">{news.category || 'أخبار'}</span>
-                        <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-2">{news.description || news.content?.substring(0, 100)}...</p>
-                        <span className="text-gray-400 text-xs mt-2 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
-                      </div>
-                    </a>
-                  </div>
-                ))}
+          <div className="lg:col-span-3 order-3">
+            <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full">
+              <h3 className="text-cyan-600 dark:text-cyan-400 font-bold text-lg mb-3 pb-2 border-b border-cyan-200 dark:border-cyan-800 flex items-center gap-2">
+                <FaChartBar /> قوائم تقنية
+              </h3>
+              <SmallListWithImage items={regularGroup3} />
+              
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-gray-500 dark:text-gray-400 text-xs font-bold mb-2">أخبار التقنية</h4>
+                <SmallListWithImage items={extraGroup} />
               </div>
             </div>
           </div>
@@ -640,23 +528,6 @@ export default async function Home() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-2px); }
-        }
-        .animate-bounce {
-          animation: bounce 0.5s ease-in-out infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .animate-pulse {
-          animation: pulse 1s ease-in-out infinite;
-        }
-      `}</style>
     </>
   )
 }
