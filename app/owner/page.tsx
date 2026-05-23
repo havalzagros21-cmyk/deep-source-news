@@ -12,7 +12,7 @@ import {
   FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, FaArrowUp, FaArrowDown,
   FaUsers, FaGlobe, FaCalendarAlt, FaStar, FaPenFancy, FaChartBar,
   FaFire, FaUserPlus, FaUserMinus, FaKey, FaExchangeAlt, FaListUl,
-  FaRulerCombined, FaFont, FaBorderAll, FaSlidersH
+  FaRulerCombined, FaFont, FaBorderAll, FaSlidersH, FaMapMarkerAlt
 } from 'react-icons/fa'
 import { getAllTickerItems, addCustomTickerItem, deleteTickerItem, updateTickerOrder, toggleTickerItem } from '../../lib/siteConfig'
 
@@ -26,6 +26,8 @@ interface NewsItem {
   category: string
   image: string
   created_at: string
+  position?: string
+  is_featured?: boolean
 }
 
 interface Settings {
@@ -133,7 +135,7 @@ export default function OwnerPage() {
   const [loadingAuth, setLoadingAuth] = useState(true)
   
   // حالات التبويبات
-  const [activeTab, setActiveTab] = useState<'home' | 'news' | 'settings' | 'ticker' | 'hero' | 'comments' | 'dailybrief' | 'exchange' | 'stats' | 'freetext' | 'templates' | 'admins' | 'menu'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'news' | 'settings' | 'ticker' | 'hero' | 'comments' | 'dailybrief' | 'exchange' | 'stats' | 'freetext' | 'templates' | 'admins' | 'menu'>('news')
   
   // حالات الأخبار
   const [news, setNews] = useState<NewsItem[]>([])
@@ -147,6 +149,8 @@ export default function OwnerPage() {
   const [newNewsCategory, setNewNewsCategory] = useState('')
   const [newNewsImage, setNewNewsImage] = useState('')
   const [newNewsSlug, setNewNewsSlug] = useState('')
+  const [newNewsPosition, setNewNewsPosition] = useState('auto')
+  const [newNewsFeatured, setNewNewsFeatured] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   
   // حالات الإعدادات العامة
@@ -309,7 +313,6 @@ export default function OwnerPage() {
     if (data && data.length > 0) {
       setExchangeRates(data as ExchangeRate[])
     } else {
-      // بيانات افتراضية
       const defaultRates: ExchangeRate[] = [
         { id: 1, name: 'الريال السعودي', code: 'SAR', value: 1.00, unit: 'ر.س', category: 'arab', trend: 'up', order_index: 1, is_active: true },
         { id: 2, name: 'الدرهم الإماراتي', code: 'AED', value: 1.02, unit: 'د.إ', category: 'arab', trend: 'stable', order_index: 2, is_active: true },
@@ -414,6 +417,8 @@ export default function OwnerPage() {
       content: newsItem.content,
       category: newsItem.category,
       image: newsItem.image,
+      position: newsItem.position || 'auto',
+      is_featured: newsItem.is_featured || false,
     }).eq('id', newsItem.id)
     if (!error) {
       setMessage('✅ تم تحديث الخبر بنجاح')
@@ -431,7 +436,6 @@ export default function OwnerPage() {
       return
     }
 
-    // إنشاء slug تلقائي من العنوان
     const slug = newNewsSlug || newNewsTitle
       .replace(/[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FFa-zA-Z0-9]/g, '-')
       .replace(/-+/g, '-')
@@ -448,7 +452,8 @@ export default function OwnerPage() {
         slug: slug,
         description: newNewsContent.substring(0, 200),
         created_at: new Date().toISOString(),
-        is_featured: false
+        position: newNewsPosition,
+        is_featured: newNewsFeatured,
       }])
 
     if (!error) {
@@ -459,6 +464,8 @@ export default function OwnerPage() {
       setNewNewsCategory('')
       setNewNewsImage('')
       setNewNewsSlug('')
+      setNewNewsPosition('auto')
+      setNewNewsFeatured(false)
       fetchNews()
     } else {
       setMessage('❌ خطأ في الإضافة: ' + error.message)
@@ -932,7 +939,7 @@ export default function OwnerPage() {
     const { error } = await supabase.from('admins').insert([{
       username: newAdminUsername,
       name: newAdminName,
-      password: btoa(newAdminPassword), // تشفير بسيط
+      password: btoa(newAdminPassword),
       role: newAdminRole,
       created_at: new Date().toISOString()
     }])
@@ -1099,8 +1106,237 @@ export default function OwnerPage() {
         </div>
 
         {/* ============================================================
-            تبويب الصفحة الرئيسية (HOME)
+            تبويب إدارة الأخبار (NEWS) مع إضافة خبر جديد ومكان الظهور
         ============================================================ */}
+        {activeTab === 'news' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">📰 إدارة الأخبار</h2>
+              <button 
+                onClick={() => setShowAddNewsModal(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+              >
+                <FaPlus /> إضافة خبر جديد
+              </button>
+            </div>
+            
+            {loading ? (
+              <p className="text-center py-20">جاري التحميل...</p>
+            ) : news.length === 0 ? (
+              <p className="text-center py-20 text-gray-500">لا توجد أخبار بعد</p>
+            ) : (
+              news.map((item) => (
+                <div key={item.id} className="bg-white dark:bg-cardBg rounded-xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm">
+                  {editingNews?.id === item.id ? (
+                    <div className="space-y-3">
+                      <input type="text" value={editingNews.title} onChange={(e) => setEditingNews({ ...editingNews, title: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-gray-900" />
+                      <textarea value={editingNews.content} onChange={(e) => setEditingNews({ ...editingNews, content: e.target.value })} rows={5} className="w-full p-2 rounded-lg border dark:bg-gray-900" />
+                      
+                      {/* مكان ظهور الخبر */}
+                      <div>
+                        <label className="block font-bold mb-1 text-sm">📍 مكان ظهور الخبر</label>
+                        <select 
+                          value={editingNews.position || 'auto'} 
+                          onChange={(e) => setEditingNews({ ...editingNews, position: e.target.value })}
+                          className="w-full p-2 rounded-lg border dark:bg-gray-900"
+                        >
+                          <option value="auto">🔄 تلقائي (حسب التصنيف)</option>
+                          <option value="featured">⭐ أخبار عاجلة (الصفحة الرئيسية)</option>
+                          <option value="template1_top">📰 القالب الأول - أعلى</option>
+                          <option value="template1_bottom">📰 القالب الأول - أسفل</option>
+                          <option value="template2">📊 القالب الثاني - تحليلات سياسية</option>
+                          <option value="template3">🌍 القالب الثالث</option>
+                          <option value="category_only">📁 صفحة التصنيف فقط (لا يظهر في الرئيسية)</option>
+                        </select>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          id="featuredCheck" 
+                          checked={editingNews.is_featured || false} 
+                          onChange={(e) => setEditingNews({ ...editingNews, is_featured: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        <label htmlFor="featuredCheck" className="text-sm">تمييز كخبر عاجل (يظهر في الشريط العلوي)</label>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button onClick={() => handleUpdate(editingNews)} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaSave /> حفظ</button>
+                        <button onClick={() => setEditingNews(null)} className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaTimes /> إلغاء</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{item.title}</h3>
+                        <p className="text-gray-500 text-sm">
+                          {item.category || 'عام'} • 
+                          {new Date(item.created_at).toLocaleDateString('ar-EG')} • 
+                          <span className={`mr-2 px-2 py-0.5 rounded text-xs ${
+                            item.position === 'featured' ? 'bg-yellow-100 text-yellow-700' :
+                            item.position === 'template1_top' ? 'bg-blue-100 text-blue-700' :
+                            item.position === 'template2' ? 'bg-green-100 text-green-700' :
+                            item.position === 'template3' ? 'bg-purple-100 text-purple-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {item.position === 'featured' ? '⭐ عاجل' :
+                             item.position === 'template1_top' ? '📰 قالب1 أعلى' :
+                             item.position === 'template1_bottom' ? '📰 قالب1 أسفل' :
+                             item.position === 'template2' ? '📊 قالب2' :
+                             item.position === 'template3' ? '🌍 قالب3' :
+                             item.position === 'category_only' ? '📁 تصنيف فقط' :
+                             '🔄 تلقائي'}
+                          </span>
+                          {item.is_featured && <span className="mr-1 px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">🔥 مميز</span>}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingNews(item)} className="text-blue-500 hover:text-blue-600 p-2"><FaEdit size={20} /></button>
+                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-600 p-2"><FaTrash size={20} /></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+
+            {/* مودال إضافة خبر جديد */}
+            {showAddNewsModal && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                  <h3 className="text-xl font-bold mb-4">➕ إضافة خبر جديد</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block font-bold mb-2">العنوان *</label>
+                      <input 
+                        type="text" 
+                        value={newNewsTitle} 
+                        onChange={(e) => setNewNewsTitle(e.target.value)}
+                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
+                        placeholder="أدخل عنوان الخبر"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block font-bold mb-2">المحتوى *</label>
+                      <textarea 
+                        value={newNewsContent} 
+                        onChange={(e) => setNewNewsContent(e.target.value)}
+                        rows={8}
+                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
+                        placeholder="أدخل محتوى الخبر..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block font-bold mb-2">التصنيف</label>
+                      <select 
+                        value={newNewsCategory} 
+                        onChange={(e) => setNewNewsCategory(e.target.value)}
+                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
+                      >
+                        <option value="">اختر تصنيف</option>
+                        <option value="politics">سياسة</option>
+                        <option value="economy">اقتصاد</option>
+                        <option value="tech">تكنولوجيا</option>
+                        <option value="sports">رياضة</option>
+                        <option value="culture">ثقافة</option>
+                        <option value="opinions">آراء</option>
+                        <option value="zodiac">أبراج الفلك</option>
+                        <option value="misc">منوعات</option>
+                      </select>
+                    </div>
+                    
+                    {/* مكان ظهور الخبر */}
+                    <div>
+                      <label className="block font-bold mb-2">📍 مكان ظهور الخبر</label>
+                      <select 
+                        value={newNewsPosition} 
+                        onChange={(e) => setNewNewsPosition(e.target.value)}
+                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
+                      >
+                        <option value="auto">🔄 تلقائي (حسب التصنيف)</option>
+                        <option value="featured">⭐ أخبار عاجلة (الصفحة الرئيسية)</option>
+                        <option value="template1_top">📰 القالب الأول - أعلى (تحت السلايدر)</option>
+                        <option value="template1_bottom">📰 القالب الأول - أسفل</option>
+                        <option value="template2">📊 القالب الثاني - تحليلات سياسية</option>
+                        <option value="template3">🌍 القالب الثالث</option>
+                        <option value="category_only">📁 صفحة التصنيف فقط (لا يظهر في الرئيسية)</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">تحديد مكان ظهور الخبر في الصفحة الرئيسية</p>
+                    </div>
+                    
+                    {/* تمييز كخبر عاجل */}
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        id="featuredCheckAdd" 
+                        checked={newNewsFeatured} 
+                        onChange={(e) => setNewNewsFeatured(e.target.checked)}
+                        className="w-5 h-5"
+                      />
+                      <label htmlFor="featuredCheckAdd" className="font-bold">تمييز كخبر عاجل (يظهر في الشريط العلوي وأخبار عاجلة)</label>
+                    </div>
+                    
+                    <div>
+                      <label className="block font-bold mb-2">الصورة</label>
+                      <div className="flex gap-3 flex-wrap">
+                        <button 
+                          onClick={() => document.getElementById('newsImageInput')?.click()}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                          disabled={uploadingImage}
+                        >
+                          <FaUpload /> {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
+                        </button>
+                        <input id="newsImageInput" type="file" accept="image/*" className="hidden" onChange={handleNewsImageUpload} />
+                        <input 
+                          type="text" 
+                          value={newNewsImage} 
+                          onChange={(e) => setNewNewsImage(e.target.value)}
+                          placeholder="أو أدخل رابط الصورة"
+                          className="flex-1 p-3 rounded-lg border dark:bg-gray-800"
+                        />
+                      </div>
+                      {newNewsImage && (
+                        <img src={newNewsImage} alt="معاينة" className="mt-2 h-32 object-cover rounded" />
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block font-bold mb-2">رابط مخصص (Slug) - اختياري</label>
+                      <input 
+                        type="text" 
+                        value={newNewsSlug} 
+                        onChange={(e) => setNewNewsSlug(e.target.value)}
+                        placeholder="مثال: my-news-title"
+                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">اتركه فارغاً ليتم إنشاؤه تلقائياً من العنوان</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 mt-6">
+                    <button onClick={handleAddNews} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة الخبر</button>
+                    <button onClick={() => {
+                      setShowAddNewsModal(false)
+                      setNewNewsTitle('')
+                      setNewNewsContent('')
+                      setNewNewsCategory('')
+                      setNewNewsImage('')
+                      setNewNewsSlug('')
+                      setNewNewsPosition('auto')
+                      setNewNewsFeatured(false)
+                    }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* باقي التبويبات (نفس الكود القديم - لم يتم تغييرها) */}
         {activeTab === 'home' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -1138,9 +1374,6 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب البانر العلوي (HERO)
-        ============================================================ */}
         {activeTab === 'hero' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800 space-y-6">
             <h2 className="text-2xl font-bold mb-4">🖼️ تخصيص البانر العلوي</h2>
@@ -1212,158 +1445,6 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب إدارة الأخبار (NEWS) مع إضافة خبر جديد
-        ============================================================ */}
-        {activeTab === 'news' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">📰 إدارة الأخبار</h2>
-              <button 
-                onClick={() => setShowAddNewsModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
-              >
-                <FaPlus /> إضافة خبر جديد
-              </button>
-            </div>
-            
-            {loading ? (
-              <p className="text-center py-20">جاري التحميل...</p>
-            ) : news.length === 0 ? (
-              <p className="text-center py-20 text-gray-500">لا توجد أخبار بعد</p>
-            ) : (
-              news.map((item) => (
-                <div key={item.id} className="bg-white dark:bg-cardBg rounded-xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm">
-                  {editingNews?.id === item.id ? (
-                    <div className="space-y-3">
-                      <input type="text" value={editingNews.title} onChange={(e) => setEditingNews({ ...editingNews, title: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-gray-900" />
-                      <textarea value={editingNews.content} onChange={(e) => setEditingNews({ ...editingNews, content: e.target.value })} rows={5} className="w-full p-2 rounded-lg border dark:bg-gray-900" />
-                      <div className="flex gap-2">
-                        <button onClick={() => handleUpdate(editingNews)} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaSave /> حفظ</button>
-                        <button onClick={() => setEditingNews(null)} className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaTimes /> إلغاء</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg">{item.title}</h3>
-                        <p className="text-gray-500 text-sm">{item.category || 'عام'} • {new Date(item.created_at).toLocaleDateString('ar-EG')}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => setEditingNews(item)} className="text-blue-500 hover:text-blue-600 p-2"><FaEdit size={20} /></button>
-                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-600 p-2"><FaTrash size={20} /></button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-
-            {/* مودال إضافة خبر جديد */}
-            {showAddNewsModal && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-                  <h3 className="text-xl font-bold mb-4">➕ إضافة خبر جديد</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block font-bold mb-2">العنوان *</label>
-                      <input 
-                        type="text" 
-                        value={newNewsTitle} 
-                        onChange={(e) => setNewNewsTitle(e.target.value)}
-                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
-                        placeholder="أدخل عنوان الخبر"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block font-bold mb-2">المحتوى *</label>
-                      <textarea 
-                        value={newNewsContent} 
-                        onChange={(e) => setNewNewsContent(e.target.value)}
-                        rows={8}
-                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
-                        placeholder="أدخل محتوى الخبر..."
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block font-bold mb-2">التصنيف</label>
-                      <select 
-                        value={newNewsCategory} 
-                        onChange={(e) => setNewNewsCategory(e.target.value)}
-                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
-                      >
-                        <option value="">اختر تصنيف</option>
-                        <option value="politics">سياسة</option>
-                        <option value="economy">اقتصاد</option>
-                        <option value="tech">تكنولوجيا</option>
-                        <option value="sports">رياضة</option>
-                        <option value="culture">ثقافة</option>
-                        <option value="opinions">آراء</option>
-                        <option value="zodiac">أبراج الفلك</option>
-                        <option value="misc">منوعات</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block font-bold mb-2">الصورة</label>
-                      <div className="flex gap-3 flex-wrap">
-                        <button 
-                          onClick={() => document.getElementById('newsImageInput')?.click()}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                          disabled={uploadingImage}
-                        >
-                          <FaUpload /> {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
-                        </button>
-                        <input id="newsImageInput" type="file" accept="image/*" className="hidden" onChange={handleNewsImageUpload} />
-                        <input 
-                          type="text" 
-                          value={newNewsImage} 
-                          onChange={(e) => setNewNewsImage(e.target.value)}
-                          placeholder="أو أدخل رابط الصورة"
-                          className="flex-1 p-3 rounded-lg border dark:bg-gray-800"
-                        />
-                      </div>
-                      {newNewsImage && (
-                        <img src={newNewsImage} alt="معاينة" className="mt-2 h-32 object-cover rounded" />
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block font-bold mb-2">رابط مخصص (Slug) - اختياري</label>
-                      <input 
-                        type="text" 
-                        value={newNewsSlug} 
-                        onChange={(e) => setNewNewsSlug(e.target.value)}
-                        placeholder="مثال: my-news-title"
-                        className="w-full p-3 rounded-lg border dark:bg-gray-800"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">اتركه فارغاً ليتم إنشاؤه تلقائياً من العنوان</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3 mt-6">
-                    <button onClick={handleAddNews} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة الخبر</button>
-                    <button onClick={() => {
-                      setShowAddNewsModal(false)
-                      setNewNewsTitle('')
-                      setNewNewsContent('')
-                      setNewNewsCategory('')
-                      setNewNewsImage('')
-                      setNewNewsSlug('')
-                    }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ============================================================
-            تبويب الأسعار العالمية (EXCHANGE RATES)
-        ============================================================ */}
         {activeTab === 'exchange' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
@@ -1375,7 +1456,6 @@ export default function OwnerPage() {
 
             <p className="text-gray-500 text-sm mb-6">يمكنك إضافة وتعديل وحذف الأسعار العالمية (عملات، معادن، طاقة، مؤشرات)</p>
 
-            {/* العملات العربية */}
             <div className="mb-6">
               <h3 className="font-bold text-lg mb-3 border-r-2 border-green-500 pr-3">🇸🇦 العملات العربية</h3>
               <div className="space-y-2">
@@ -1399,7 +1479,6 @@ export default function OwnerPage() {
               </div>
             </div>
 
-            {/* العملات الأجنبية */}
             <div className="mb-6">
               <h3 className="font-bold text-lg mb-3 border-r-2 border-blue-500 pr-3">🌍 العملات الأجنبية</h3>
               <div className="space-y-2">
@@ -1423,48 +1502,18 @@ export default function OwnerPage() {
               </div>
             </div>
 
-            {/* مودال إضافة/تعديل سعر */}
             {showRateModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">{editingRate ? '✏️ تعديل السعر' : '➕ إضافة سعر جديد'}</h3>
                   
                   <div className="space-y-4">
-                    <div>
-                      <label className="block font-bold mb-2">الاسم</label>
-                      <input type="text" value={editingRate ? editingRate.name : newRateName} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, name: e.target.value }) : setNewRateName(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">الرمز (CODE)</label>
-                      <input type="text" value={editingRate ? editingRate.code : newRateCode} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, code: e.target.value.toUpperCase() }) : setNewRateCode(e.target.value.toUpperCase())} className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">القيمة</label>
-                      <input type="number" step="0.01" value={editingRate ? editingRate.value : newRateValue} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, value: parseFloat(e.target.value) }) : setNewRateValue(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">الوحدة</label>
-                      <input type="text" value={editingRate ? editingRate.unit : newRateUnit} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, unit: e.target.value }) : setNewRateUnit(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">الفئة</label>
-                      <select value={editingRate ? editingRate.category : newRateCategory} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, category: e.target.value as any }) : setNewRateCategory(e.target.value as any)} className="w-full p-3 rounded-lg border dark:bg-gray-800">
-                        <option value="arab">🇸🇦 عملات عربية</option>
-                        <option value="foreign">🌍 عملات أجنبية</option>
-                        <option value="crypto">💎 عملات رقمية</option>
-                        <option value="metal">🏆 معادن</option>
-                        <option value="energy">⛽ طاقة</option>
-                        <option value="index">📈 مؤشرات</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">الاتجاه</label>
-                      <select value={editingRate ? editingRate.trend : newRateTrend} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, trend: e.target.value as any }) : setNewRateTrend(e.target.value as any)} className="w-full p-3 rounded-lg border dark:bg-gray-800">
-                        <option value="up">📈 صاعد ↑</option>
-                        <option value="down">📉 هابط ↓</option>
-                        <option value="stable">➡️ مستقر →</option>
-                      </select>
-                    </div>
+                    <div><label className="block font-bold mb-2">الاسم</label><input type="text" value={editingRate ? editingRate.name : newRateName} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, name: e.target.value }) : setNewRateName(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div><label className="block font-bold mb-2">الرمز (CODE)</label><input type="text" value={editingRate ? editingRate.code : newRateCode} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, code: e.target.value.toUpperCase() }) : setNewRateCode(e.target.value.toUpperCase())} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div><label className="block font-bold mb-2">القيمة</label><input type="number" step="0.01" value={editingRate ? editingRate.value : newRateValue} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, value: parseFloat(e.target.value) }) : setNewRateValue(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div><label className="block font-bold mb-2">الوحدة</label><input type="text" value={editingRate ? editingRate.unit : newRateUnit} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, unit: e.target.value }) : setNewRateUnit(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div><label className="block font-bold mb-2">الفئة</label><select value={editingRate ? editingRate.category : newRateCategory} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, category: e.target.value as any }) : setNewRateCategory(e.target.value as any)} className="w-full p-3 rounded-lg border dark:bg-gray-800"><option value="arab">🇸🇦 عملات عربية</option><option value="foreign">🌍 عملات أجنبية</option><option value="crypto">💎 عملات رقمية</option><option value="metal">🏆 معادن</option><option value="energy">⛽ طاقة</option><option value="index">📈 مؤشرات</option></select></div>
+                    <div><label className="block font-bold mb-2">الاتجاه</label><select value={editingRate ? editingRate.trend : newRateTrend} onChange={(e) => editingRate ? setEditingRate({ ...editingRate, trend: e.target.value as any }) : setNewRateTrend(e.target.value as any)} className="w-full p-3 rounded-lg border dark:bg-gray-800"><option value="up">📈 صاعد ↑</option><option value="down">📉 هابط ↓</option><option value="stable">➡️ مستقر →</option></select></div>
                   </div>
                   
                   <div className="flex gap-3 mt-6">
@@ -1477,9 +1526,6 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب الإحصائيات (STATS)
-        ============================================================ */}
         {activeTab === 'stats' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
@@ -1509,51 +1555,32 @@ export default function OwnerPage() {
               ))}
             </div>
 
-            {/* مودال إضافة/تعديل إحصائية */}
             {showStatModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">{editingStat ? '✏️ تعديل الإحصائية' : '➕ إضافة إحصائية جديدة'}</h3>
-                  
                   <div className="space-y-4">
-                    <div>
-                      <label className="block font-bold mb-2">القيمة (مثال: 120+، 50K+)</label>
-                      <input type="text" value={editingStat ? editingStat.value : newStatValue} onChange={(e) => editingStat ? setEditingStat({ ...editingStat, value: e.target.value }) : setNewStatValue(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">الوصف (مثال: دولة، قارئ، مقال)</label>
-                      <input type="text" value={editingStat ? editingStat.label : newStatLabel} onChange={(e) => editingStat ? setEditingStat({ ...editingStat, label: e.target.value }) : setNewStatLabel(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
+                    <div><label className="block font-bold mb-2">القيمة (مثال: 120+، 50K+)</label><input type="text" value={editingStat ? editingStat.value : newStatValue} onChange={(e) => editingStat ? setEditingStat({ ...editingStat, value: e.target.value }) : setNewStatValue(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div><label className="block font-bold mb-2">الوصف (مثال: دولة، قارئ، مقال)</label><input type="text" value={editingStat ? editingStat.label : newStatLabel} onChange={(e) => editingStat ? setEditingStat({ ...editingStat, label: e.target.value }) : setNewStatLabel(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
                   </div>
-                  
-                  <div className="flex gap-3 mt-6">
-                    <button onClick={editingStat ? handleUpdateStat : handleAddStat} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">{editingStat ? 'تحديث' : 'إضافة'}</button>
-                    <button onClick={() => { setShowStatModal(false); setEditingStat(null); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button>
-                  </div>
+                  <div className="flex gap-3 mt-6"><button onClick={editingStat ? handleUpdateStat : handleAddStat} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">{editingStat ? 'تحديث' : 'إضافة'}</button><button onClick={() => { setShowStatModal(false); setEditingStat(null); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ============================================================
-            تبويب النصوص الحرة (FREE TEXT)
-        ============================================================ */}
         {activeTab === 'freetext' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold mb-6">📝 إدارة النصوص الحرة</h2>
             <p className="text-gray-500 text-sm mb-6">يمكنك تعديل النصوص التي تظهر في الأقسام (التحليلات الاقتصادية، الرؤية، أبراج اليوم)</p>
-
             <div className="space-y-6">
               {freeTexts.map((text) => (
                 <div key={text.id} className="border-b border-gray-200 dark:border-gray-700 pb-4">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-bold text-lg">{text.title}</h3>
                     {editingText?.id === text.id ? (
-                      <div className="flex gap-2">
-                        <button onClick={handleUpdateFreeText} className="text-green-600"><FaSave size={20} /></button>
-                        <button onClick={() => setEditingText(null)} className="text-gray-500"><FaTimes size={20} /></button>
-                      </div>
+                      <div className="flex gap-2"><button onClick={handleUpdateFreeText} className="text-green-600"><FaSave size={20} /></button><button onClick={() => setEditingText(null)} className="text-gray-500"><FaTimes size={20} /></button></div>
                     ) : (
                       <button onClick={() => setEditingText(text)} className="text-blue-500"><FaEdit size={20} /></button>
                     )}
@@ -1569,87 +1596,43 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب القوالب (TEMPLATES)
-        ============================================================ */}
         {activeTab === 'templates' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold mb-6">🎨 تخصيص القوالب</h2>
             <p className="text-gray-500 text-sm mb-6">يمكنك تفعيل/تعطيل وإعادة ترتيب القوالب في الصفحة الرئيسية</p>
-
             <div className="space-y-4">
               {templates.map((template, idx) => (
                 <div key={template.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div>
-                    <p className="font-bold">{template.title}</p>
-                    <p className="text-sm text-gray-500">معرف: {template.template_id}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => handleToggleTemplate(template.id, template.is_enabled)} className={`px-4 py-2 rounded-lg transition ${template.is_enabled ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>
-                      {template.is_enabled ? 'مفعل' : 'معطل'}
-                    </button>
-                  </div>
+                  <div><p className="font-bold">{template.title}</p><p className="text-sm text-gray-500">معرف: {template.template_id}</p></div>
+                  <div className="flex items-center gap-3"><button onClick={() => handleToggleTemplate(template.id, template.is_enabled)} className={`px-4 py-2 rounded-lg transition ${template.is_enabled ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>{template.is_enabled ? 'مفعل' : 'معطل'}</button></div>
                 </div>
               ))}
             </div>
-
-            <div className="mt-6 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-400">
-                💡 <strong>ملاحظة:</strong> القالب الأول (رئيسي)، القالب الثاني (تحليلات سياسية وأبراج)، القالب الثالث (آراء وأسعار عالمية)
-              </p>
-            </div>
+            <div className="mt-6 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg"><p className="text-sm text-blue-700 dark:text-blue-400">💡 <strong>ملاحظة:</strong> القالب الأول (رئيسي)، القالب الثاني (تحليلات سياسية وأبراج)، القالب الثالث (آراء وأسعار عالمية)</p></div>
           </div>
         )}
 
-        {/* ============================================================
-            تبويب الشريط المتحرك (TICKER)
-        ============================================================ */}
         {activeTab === 'ticker' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800 space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <h2 className="text-2xl font-bold">📢 إدارة الشريط المتحرك</h2>
-              <button onClick={() => setShowAddModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة عنصر جديد</button>
-            </div>
-
+            <div className="flex justify-between items-center flex-wrap gap-4"><h2 className="text-2xl font-bold">📢 إدارة الشريط المتحرك</h2><button onClick={() => setShowAddModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة عنصر جديد</button></div>
             <p className="text-gray-500 text-sm">يمكنك إضافة أي نص تريده إلى الشريط (إعلانات، تنبيهات، روابط). العناصر النشطة فقط هي التي تظهر.</p>
-
             {tickerItems.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-gray-500">لا توجد عناصر في الشريط بعد</p>
-              </div>
+              <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg"><p className="text-gray-500">لا توجد عناصر في الشريط بعد</p></div>
             ) : (
               <div className="space-y-3">
                 {tickerItems.map((item, index) => (
                   <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="flex items-center gap-4 flex-1">
-                      <span className="text-gray-400 text-sm w-8">{index + 1}</span>
-                      <div className="flex-1">
-                        <p className="font-medium">{item.text_content}</p>
-                        {item.link_url && <p className="text-xs text-blue-500 mt-1">🔗 {item.link_url}</p>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => moveUp(index)} disabled={index === 0} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↑</button>
-                      <button onClick={() => moveDown(index)} disabled={index === tickerItems.length - 1} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↓</button>
-                      <button onClick={() => handleToggleActive(item.id, item.is_active)} className={`p-2 rounded ${item.is_active ? 'text-green-500' : 'text-gray-400'}`}>{item.is_active ? <FaEye /> : <FaEyeSlash />}</button>
-                      <button onClick={() => handleRemoveFromTicker(item.id)} className="p-2 text-red-500 hover:text-red-700"><FaTrash /></button>
-                    </div>
+                    <div className="flex items-center gap-4 flex-1"><span className="text-gray-400 text-sm w-8">{index + 1}</span><div className="flex-1"><p className="font-medium">{item.text_content}</p>{item.link_url && <p className="text-xs text-blue-500 mt-1">🔗 {item.link_url}</p>}</div></div>
+                    <div className="flex items-center gap-2"><button onClick={() => moveUp(index)} disabled={index === 0} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↑</button><button onClick={() => moveDown(index)} disabled={index === tickerItems.length - 1} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↓</button><button onClick={() => handleToggleActive(item.id, item.is_active)} className={`p-2 rounded ${item.is_active ? 'text-green-500' : 'text-gray-400'}`}>{item.is_active ? <FaEye /> : <FaEyeSlash />}</button><button onClick={() => handleRemoveFromTicker(item.id)} className="p-2 text-red-500 hover:text-red-700"><FaTrash /></button></div>
                   </div>
                 ))}
               </div>
             )}
-
-            {/* مودال إضافة عنصر جديد */}
             {showAddModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">➕ إضافة عنصر جديد إلى الشريط</h3>
-                  <div className="space-y-4">
-                    <div><label className="block font-bold mb-2">النص *</label><input type="text" value={newTickerText} onChange={(e) => setNewTickerText(e.target.value)} placeholder="مثال: 🔥 عاجل: حدث مهم" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">رابط (اختياري)</label><input type="text" value={newTickerLink} onChange={(e) => setNewTickerLink(e.target.value)} placeholder="/news/important-event" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">نص الرابط (اختياري)</label><input type="text" value={newTickerLinkText} onChange={(e) => setNewTickerLinkText(e.target.value)} placeholder="مثال: اقرأ المزيد" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div className="flex items-center gap-3"><input type="checkbox" id="isExternal" checked={newTickerIsExternal} onChange={(e) => setNewTickerIsExternal(e.target.checked)} className="w-5 h-5" /><label htmlFor="isExternal">رابط خارجي (يفتح في نافذة جديدة)</label></div>
-                  </div>
+                  <div className="space-y-4"><div><label className="block font-bold mb-2">النص *</label><input type="text" value={newTickerText} onChange={(e) => setNewTickerText(e.target.value)} placeholder="مثال: 🔥 عاجل: حدث مهم" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">رابط (اختياري)</label><input type="text" value={newTickerLink} onChange={(e) => setNewTickerLink(e.target.value)} placeholder="/news/important-event" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">نص الرابط (اختياري)</label><input type="text" value={newTickerLinkText} onChange={(e) => setNewTickerLinkText(e.target.value)} placeholder="مثال: اقرأ المزيد" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div className="flex items-center gap-3"><input type="checkbox" id="isExternal" checked={newTickerIsExternal} onChange={(e) => setNewTickerIsExternal(e.target.checked)} className="w-5 h-5" /><label htmlFor="isExternal">رابط خارجي (يفتح في نافذة جديدة)</label></div></div>
                   <div className="flex gap-3 mt-6"><button onClick={handleAddToTicker} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button><button onClick={() => { setShowAddModal(false); setNewTickerText(''); setNewTickerLink(''); setNewTickerLinkText(''); setNewTickerIsExternal(false); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
                 </div>
               </div>
@@ -1657,16 +1640,9 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب الجريدة اليومية (DAILY BRIEF)
-        ============================================================ */}
         {activeTab === 'dailybrief' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">📰 إدارة الجريدة اليومية</h2>
-              <button onClick={() => setShowDailyBriefModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة عنصر جديد</button>
-            </div>
-
+            <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">📰 إدارة الجريدة اليومية</h2><button onClick={() => setShowDailyBriefModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة عنصر جديد</button></div>
             {dailyBrief.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg"><p className="text-gray-500">لا توجد عناصر في الجريدة اليومية</p></div>
             ) : (
@@ -1674,27 +1650,16 @@ export default function OwnerPage() {
                 {dailyBrief.map((item, index) => (
                   <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex-1"><div className="flex items-center gap-3 mb-1"><span className="text-red-500 font-bold text-sm">{item.section_title}</span><span className="font-medium text-sm">{item.title}</span></div><p className="text-gray-600 dark:text-gray-400 text-xs line-clamp-1">{item.description}</p></div>
-                    <div className="flex gap-2">
-                      <button onClick={() => moveBriefUp(index)} disabled={index === 0} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↑</button>
-                      <button onClick={() => moveBriefDown(index)} disabled={index === dailyBrief.length - 1} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↓</button>
-                      <button onClick={() => handleDeleteBrief(item.id)} className="p-2 text-red-500 hover:text-red-700"><FaTrash /></button>
-                    </div>
+                    <div className="flex gap-2"><button onClick={() => moveBriefUp(index)} disabled={index === 0} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↑</button><button onClick={() => moveBriefDown(index)} disabled={index === dailyBrief.length - 1} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↓</button><button onClick={() => handleDeleteBrief(item.id)} className="p-2 text-red-500 hover:text-red-700"><FaTrash /></button></div>
                   </div>
                 ))}
               </div>
             )}
-
-            {/* مودال إضافة عنصر جديد */}
             {showDailyBriefModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">➕ إضافة عنصر جديد</h3>
-                  <div className="space-y-4">
-                    <div><label className="block font-bold mb-2">عنوان القسم *</label><input type="text" value={newBriefSection} onChange={(e) => setNewBriefSection(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">العنوان *</label><input type="text" value={newBriefTitle} onChange={(e) => setNewBriefTitle(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">الوصف *</label><textarea value={newBriefDescription} onChange={(e) => setNewBriefDescription(e.target.value)} rows={3} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">رابط (اختياري)</label><input type="text" value={newBriefLink} onChange={(e) => setNewBriefLink(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                  </div>
+                  <div className="space-y-4"><div><label className="block font-bold mb-2">عنوان القسم *</label><input type="text" value={newBriefSection} onChange={(e) => setNewBriefSection(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">العنوان *</label><input type="text" value={newBriefTitle} onChange={(e) => setNewBriefTitle(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">الوصف *</label><textarea value={newBriefDescription} onChange={(e) => setNewBriefDescription(e.target.value)} rows={3} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">رابط (اختياري)</label><input type="text" value={newBriefLink} onChange={(e) => setNewBriefLink(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div></div>
                   <div className="flex gap-3 mt-6"><button onClick={handleAddBrief} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button><button onClick={() => { setShowDailyBriefModal(false); setNewBriefSection(''); setNewBriefTitle(''); setNewBriefDescription(''); setNewBriefLink(''); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
                 </div>
               </div>
@@ -1702,14 +1667,10 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب التعليقات (COMMENTS)
-        ============================================================ */}
         {activeTab === 'comments' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><FaCommentDots className="text-red-600" /> 💬 إدارة التعليقات</h2>
             <p className="text-gray-500 text-sm mb-6">جميع التعليقات التي كتبها الزوار على الأخبار.</p>
-            
             {commentsLoading ? (
               <div className="text-center py-12"><div className="inline-block w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div><p className="mt-2 text-gray-500">جاري تحميل التعليقات...</p></div>
             ) : comments.length === 0 ? (
@@ -1730,17 +1691,10 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب القائمة العلوية (MENU)
-        ============================================================ */}
         {activeTab === 'menu' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">🔗 إدارة القائمة العلوية</h2>
-              <button onClick={() => setShowMenuModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة رابط جديد</button>
-            </div>
+            <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">🔗 إدارة القائمة العلوية</h2><button onClick={() => setShowMenuModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة رابط جديد</button></div>
             <p className="text-gray-500 text-sm mb-6">تظهر هذه الروابط في القائمة العلوية للموقع</p>
-
             {menuItems.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg"><p className="text-gray-500">لا توجد عناصر في القائمة</p></div>
             ) : (
@@ -1753,15 +1707,11 @@ export default function OwnerPage() {
                 ))}
               </div>
             )}
-
             {showMenuModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">➕ إضافة رابط جديد</h3>
-                  <div className="space-y-4">
-                    <div><label className="block font-bold mb-2">النص الظاهر *</label><input type="text" value={newMenuTitle} onChange={(e) => setNewMenuTitle(e.target.value)} placeholder="مثال: الرئيسية" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">الرابط *</label><input type="text" value={newMenuLink} onChange={(e) => setNewMenuLink(e.target.value)} placeholder="/  أو /category/tech" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                  </div>
+                  <div className="space-y-4"><div><label className="block font-bold mb-2">النص الظاهر *</label><input type="text" value={newMenuTitle} onChange={(e) => setNewMenuTitle(e.target.value)} placeholder="مثال: الرئيسية" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">الرابط *</label><input type="text" value={newMenuLink} onChange={(e) => setNewMenuLink(e.target.value)} placeholder="/  أو /category/tech" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div></div>
                   <div className="flex gap-3 mt-6"><button onClick={handleAddMenuItem} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button><button onClick={() => { setShowMenuModal(false); setNewMenuTitle(''); setNewMenuLink(''); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
                 </div>
               </div>
@@ -1769,17 +1719,10 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب المشرفين (ADMINS)
-        ============================================================ */}
         {activeTab === 'admins' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">👥 إدارة المشرفين</h2>
-              <button onClick={() => setShowAdminModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaUserPlus /> إضافة مشرف جديد</button>
-            </div>
+            <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">👥 إدارة المشرفين</h2><button onClick={() => setShowAdminModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaUserPlus /> إضافة مشرف جديد</button></div>
             <p className="text-gray-500 text-sm mb-6">يمكنك إضافة مشرفين جدد مع صلاحيات محددة</p>
-
             <div className="space-y-3">
               {admins.map((admin) => (
                 <div key={admin.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -1788,17 +1731,11 @@ export default function OwnerPage() {
                 </div>
               ))}
             </div>
-
             {showAdminModal && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">👤 إضافة مشرف جديد</h3>
-                  <div className="space-y-4">
-                    <div><label className="block font-bold mb-2">اسم المستخدم *</label><input type="text" value={newAdminUsername} onChange={(e) => setNewAdminUsername(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">الاسم الكامل *</label><input type="text" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">كلمة المرور *</label><input type="password" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
-                    <div><label className="block font-bold mb-2">الصلاحية</label><select value={newAdminRole} onChange={(e) => setNewAdminRole(e.target.value as 'admin' | 'editor')} className="w-full p-3 rounded-lg border dark:bg-gray-800"><option value="admin">مدير (صلاحيات كاملة)</option><option value="editor">محرر (تعديل محتوى فقط)</option></select></div>
-                  </div>
+                  <div className="space-y-4"><div><label className="block font-bold mb-2">اسم المستخدم *</label><input type="text" value={newAdminUsername} onChange={(e) => setNewAdminUsername(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">الاسم الكامل *</label><input type="text" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">كلمة المرور *</label><input type="password" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">الصلاحية</label><select value={newAdminRole} onChange={(e) => setNewAdminRole(e.target.value as 'admin' | 'editor')} className="w-full p-3 rounded-lg border dark:bg-gray-800"><option value="admin">مدير (صلاحيات كاملة)</option><option value="editor">محرر (تعديل محتوى فقط)</option></select></div></div>
                   <div className="flex gap-3 mt-6"><button onClick={handleAddAdmin} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button><button onClick={() => { setShowAdminModal(false); setNewAdminUsername(''); setNewAdminName(''); setNewAdminPassword(''); setNewAdminRole('editor'); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
                 </div>
               </div>
@@ -1806,19 +1743,12 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* ============================================================
-            تبويب الإعدادات العامة (SETTINGS)
-        ============================================================ */}
         {activeTab === 'settings' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800 space-y-6">
             <h2 className="text-2xl font-bold mb-4">⚙️ إعدادات الموقع العامة</h2>
-            
             <div><label className="block font-bold mb-2 flex items-center gap-2"><FaTelegram className="text-blue-500" /> رابط تليجرام</label><input type="url" value={settings.telegramUrl} onChange={(e) => setSettings({ ...settings, telegramUrl: e.target.value })} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
-            
             <div><label className="block font-bold mb-2">اللون الأساسي للموقع</label><div className="flex items-center gap-4 flex-wrap"><input type="color" value={settings.primaryColor} onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })} className="w-16 h-16 rounded cursor-pointer border" /><input type="text" value={settings.primaryColor} onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })} className="flex-1 p-3 rounded-lg border dark:bg-gray-900" /></div></div>
-            
             <div><label className="block font-bold mb-2">سرعة الشريط المتحرك (ميلي ثانية)</label><input type="number" value={settings.tickerSpeed} onChange={(e) => setSettings({ ...settings, tickerSpeed: parseInt(e.target.value) || 4000 })} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
-            
             <button onClick={updateSettings} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition w-full justify-center font-bold"><FaSave /> حفظ جميع الإعدادات</button>
           </div>
         )}
