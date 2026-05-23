@@ -1,26 +1,28 @@
-import './globals.css'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
+import './globals.css';
 
-export const metadata = {
-  title: 'ديب سورس نيوز | تحليلات معمقة',
-  description: 'منصة إعلامية تقدم تحليلات معمّقة للأحداث السياسية والأمنية والعسكرية',
+// تحديد اللغة الافتراضية
+const defaultLocale = 'ar';
+const locales = ['ar', 'en', 'ku'];
+
+interface RootLayoutProps {
+  children: ReactNode;
+  params?: { locale?: string };
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <html lang="ar" dir="rtl" data-scroll-behavior="smooth">
-      <body className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
-      </body>
-    </html>
-  )
+// هذا الـ Layout الرئيسي سيعيد توجيه المستخدم إلى المسار مع اللغة
+export default function RootLayout({ children, params }: RootLayoutProps) {
+  // التحقق من وجود اللغة في المسار
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const firstSegment = pathname.split('/')[1];
+  
+  // إذا كان المستخدم في المسار الرئيسي (بدون لغة)، نعيد التوجيه إلى العربية
+  if (typeof window !== 'undefined' && !locales.includes(firstSegment as any)) {
+    redirect(`/${defaultLocale}${pathname}`);
+  }
+
+  // هذا الـ Layout لا يستخدم html و body مباشرة
+  // لأن ملف [locale]/layout.tsx هو من سيتولى ذلك
+  return <>{children}</>;
 }

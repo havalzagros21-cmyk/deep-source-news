@@ -1,23 +1,73 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { FaBars, FaTimes, FaTelegram, FaMoon, FaSun } from 'react-icons/fa'
-import { isAuthenticated } from '../lib/auth'
+import { useState, useEffect, useCallback } from 'react'
+import { FaBars, FaTimes, FaTelegram, FaMoon, FaSun, FaSignOutAlt } from 'react-icons/fa'
+import { isAuthenticated, logout } from '../lib/auth'
+import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
+  const [adminName, setAdminName] = useState('')
   const [darkMode, setDarkMode] = useState(false)
 
-  useEffect(() => {
+  // دالة التحقق من حالة المصادقة
+  const checkAuthStatus = useCallback(() => {
     setIsOwner(isAuthenticated())
+    // يمكن إضافة اسم المدير هنا إذا أردت عرضه
+    try {
+      const admin = localStorage.getItem('admin')
+      if (admin) {
+        const adminData = JSON.parse(admin)
+        setAdminName(adminData.name || '')
+      }
+    } catch (e) {
+      console.error('خطأ في قراءة بيانات المدير')
+    }
+  }, [])
+
+  // دالة تسجيل الخروج
+  const handleLogout = () => {
+    logout()
+    setIsOwner(false)
+    setAdminName('')
+    setIsOpen(false)
+    router.push('/')
+  }
+
+  useEffect(() => {
+    // التحقق الأولي
+    checkAuthStatus()
+
+    // إعدادات الوضع المظلم
     const isDark = localStorage.getItem('theme') === 'dark'
     setDarkMode(isDark)
     if (isDark) {
       document.documentElement.classList.add('dark')
     }
-  }, [])
+
+    // الاستماع إلى التغيرات في localStorage (عند تسجيل الدخول/الخروج من نوافذ أخرى)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'admin') {
+        checkAuthStatus()
+      }
+    }
+
+    // حدث مخصص للتسجيل/الخروج من نفس الصفحة
+    const handleAuthChange = () => {
+      checkAuthStatus()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('authChange', handleAuthChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('authChange', handleAuthChange)
+    }
+  }, [checkAuthStatus])
 
   const toggleTheme = () => {
     const newDark = !darkMode
@@ -44,7 +94,6 @@ export default function Navbar() {
 
   // روابط الإدارة (تظهر فقط للمالك)
   const adminLinks = [
-    { name: 'لوحة التحكم', href: '/admin' },
     { name: 'لوحة المالك', href: '/owner' },
   ]
 
@@ -64,9 +113,9 @@ export default function Navbar() {
             <span className="text-gray-400 text-sm mr-1">News</span>
           </Link>
 
-          {/* Desktop Menu - مسافة مناسبة مع تأثير الضغط */}
+          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 lg:gap-3 xl:gap-4 flex-wrap">
-            {navLinks.map((link, index) => (
+            {navLinks.map((link) => (
               <Link 
                 key={link.name} 
                 href={link.href} 
@@ -75,6 +124,17 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
+            
+            {/* زر تسجيل الخروج (يظهر فقط للمالك) */}
+            {isOwner && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full transition-all duration-300 hover:scale-105 text-sm font-medium active:scale-95"
+              >
+                <FaSignOutAlt className="text-sm" />
+                <span>تسجيل خروج</span>
+              </button>
+            )}
             
             {/* Telegram Link */}
             <a 
@@ -119,6 +179,17 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
+            
+            {/* زر تسجيل الخروج في القائمة الجوالة */}
+            {isOwner && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-2 w-full py-3 text-red-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition-all duration-200 text-sm"
+              >
+                <FaSignOutAlt />
+                <span>تسجيل خروج</span>
+              </button>
+            )}
             
             <a 
               href="https://t.me/deepsourc" 
