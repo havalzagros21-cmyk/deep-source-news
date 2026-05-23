@@ -486,13 +486,59 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - الأسعار العالمية (إعادة صياغة كاملة) */}
+      {/* القالب الثالث - بدون فراغ (أخبار 9 أعمدة + أسعار 3 أعمدة) */}
       {/* ======================================== */}
       <div className="container-custom py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
-          {/* العمود الأيمن - الأسعار العالمية */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+          {/* العمود الأوسط - أخبار عادية (9 أعمدة) */}
+          <div className="lg:col-span-9 order-1 lg:order-1">
+            {mainNews && (
+              <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
+                <a href={`/news/${mainNews.slug}`}>
+                  {mainNews.image && <img src={mainNews.image} alt={mainNews.title} className="w-full h-72 object-cover" />}
+                  <div className="p-4">
+                    <span className="text-red-500 text-xs font-bold">{mainNews.category || 'أخبار'}</span>
+                    <h2 className="font-bold text-xl mt-2 line-clamp-2 group-hover:text-red-600">{mainNews.title}</h2>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{mainNews.description || mainNews.content?.substring(0, 120)}...</p>
+                    <span className="text-gray-400 text-xs mt-2 block">{new Date(mainNews.created_at).toLocaleDateString('ar-EG')}</span>
+                  </div>
+                </a>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+              {smallGroups[2].map((news) => (
+                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
+                  <a href={`/news/${news.slug}`} className="flex gap-2">
+                    {news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />}
+                    <div className="flex-1">
+                      <span className="text-red-500 text-[10px] font-bold">{news.category || 'أخبار'}</span>
+                      <h4 className="font-bold text-xs line-clamp-2 mt-1 group-hover:text-red-600">{news.title}</h4>
+                      <span className="text-gray-400 text-[10px]">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
+                    </div>
+                  </a>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              {largeGroups[2].map((news) => (
+                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
+                  <a href={`/news/${news.slug}`}>
+                    {news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />}
+                    <div className="p-3">
+                      <span className="text-red-500 text-[10px] font-bold">{news.category || 'أخبار'}</span>
+                      <h3 className="font-bold text-sm mt-1 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-300 text-[11px] mt-1 line-clamp-2">{news.description || news.content?.substring(0, 80)}...</p>
+                      <span className="text-gray-400 text-[10px] mt-1 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
+                    </div>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* العمود الأيمن - الأسعار العالمية (3 أعمدة) */}
+          <div className="lg:col-span-3 order-2 lg:order-2">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
               <div className="bg-gradient-to-r from-green-600 to-green-700 px-3 py-2">
                 <h3 className="text-white font-bold text-sm flex items-center gap-2">
@@ -569,57 +615,6 @@ export default async function Home() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* العمود الأوسط - أخبار عادية */}
-          <div className="lg:col-span-6 order-1 lg:order-2">
-            {mainNews && (
-              <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
-                <a href={`/news/${mainNews.slug}`}>
-                  {mainNews.image && <img src={mainNews.image} alt={mainNews.title} className="w-full h-72 object-cover" />}
-                  <div className="p-4">
-                    <span className="text-red-500 text-xs font-bold">{mainNews.category || 'أخبار'}</span>
-                    <h2 className="font-bold text-xl mt-2 line-clamp-2 group-hover:text-red-600">{mainNews.title}</h2>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{mainNews.description || mainNews.content?.substring(0, 120)}...</p>
-                    <span className="text-gray-400 text-xs mt-2 block">{new Date(mainNews.created_at).toLocaleDateString('ar-EG')}</span>
-                  </div>
-                </a>
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-              {smallGroups[2].map((news) => (
-                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
-                  <a href={`/news/${news.slug}`} className="flex gap-2">
-                    {news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />}
-                    <div className="flex-1">
-                      <span className="text-red-500 text-[10px] font-bold">{news.category || 'أخبار'}</span>
-                      <h4 className="font-bold text-xs line-clamp-2 mt-1 group-hover:text-red-600">{news.title}</h4>
-                      <span className="text-gray-400 text-[10px]">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
-                    </div>
-                  </a>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {largeGroups[2].map((news) => (
-                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
-                  <a href={`/news/${news.slug}`}>
-                    {news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />}
-                    <div className="p-3">
-                      <span className="text-red-500 text-[10px] font-bold">{news.category || 'أخبار'}</span>
-                      <h3 className="font-bold text-sm mt-1 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
-                      <p className="text-gray-600 dark:text-gray-300 text-[11px] mt-1 line-clamp-2">{news.description || news.content?.substring(0, 80)}...</p>
-                      <span className="text-gray-400 text-[10px] mt-1 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
-                    </div>
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* العمود الأيسر - فارغ */}
-          <div className="lg:col-span-3 order-1 lg:order-1">
-            {/* محتوى فارغ للتوازن */}
           </div>
         </div>
       </div>
