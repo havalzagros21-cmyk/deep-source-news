@@ -144,18 +144,12 @@ async function getExchangeRates() {
   
   if (error || !data || data.length === 0) {
     return {
-      // العملات العربية
       sar: 3.75, aed: 1.02, kwd: 12.25, qar: 1.03, bhd: 9.95, omr: 9.74, jod: 5.29, sdg: 0.062,
-      // العملات الأجنبية
       usd: 3.75, eur: 4.05, gbp: 4.75, jpy: 0.025, chf: 4.20, cad: 2.75, aud: 2.45, cny: 0.52,
       try: 0.11, rub: 0.041, inr: 0.045, brl: 0.68,
-      // العملات الرقمية
       btc: 65234, eth: 3456, xrp: 0.62, sol: 145, ada: 0.45, doge: 0.12,
-      // المعادن
       gold: 2350, silver: 28.50, platinum: 920, copper: 4.15,
-      // الطاقة
       oil: 85.20, wti: 80.50, ng: 2.85,
-      // المؤشرات
       sp500: 5234, nasdaq: 18450, dowjones: 39870,
     }
   }
@@ -447,7 +441,7 @@ export default async function Home() {
                       {news.image && <img src={news.image} alt={news.title} className="w-full h-44 object-cover" />}
                       <div className="p-4">
                         <span className="text-red-500 text-xs font-bold">{news.category || 'أخبار'}</span>
-                        <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
+                        <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600}>{news.title}</h3>
                         <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-2">{news.description || news.content?.substring(0, 100)}...</p>
                         <span className="text-gray-400 text-xs mt-2 block">{new Date(news.created_at).toLocaleDateString('ar-EG')}</span>
                       </div>
@@ -470,12 +464,12 @@ export default async function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - الأسعار العالمية الكاملة (بدون قوائم تقنية) */}
+      {/* القالب الثالث - الأسعار العالمية (3 أعمدة: أسعار - أخبار - فارغ) */}
       {/* ======================================== */}
       <div className="container-custom py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* العمود الأيمن - الأسعار العالمية الكاملة */}
+          {/* العمود الأيمن - الأسعار العالمية (3 أعمدة) */}
           <div className="lg:col-span-3 order-2 lg:order-1">
             <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full overflow-y-auto max-h-[600px]">
               <h3 className="text-green-600 dark:text-green-400 font-bold text-lg mb-3 pb-2 border-b border-green-200 dark:border-green-800 flex items-center gap-2 sticky top-0 bg-white/50 dark:bg-gray-800/50">
@@ -568,8 +562,8 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* العمود الأوسط - أخبار عادية */}
-          <div className="lg:col-span-9 order-1 lg:order-2">
+          {/* العمود الأوسط - أخبار عادية (6 أعمدة) */}
+          <div className="lg:col-span-6 order-1 lg:order-2">
             {mainNews && (
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                 <a href={`/news/${mainNews.slug}`}>
@@ -614,9 +608,9 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* العمود الأيسر - فارغ (بدلاً من قوائم تقنية) */}
-          <div className="lg:col-span-0 order-1 lg:order-1">
-            {/* محتوى فارغ */}
+          {/* العمود الأيسر - فارغ (3 أعمدة) للحفاظ على التوازن */}
+          <div className="lg:col-span-3 order-1 lg:order-1">
+            {/* هذا العمود فارغ عمداً */}
           </div>
         </div>
       </div>
