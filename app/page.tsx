@@ -109,15 +109,6 @@ async function getMainNews() {
   return data?.[0] || null
 }
 
-async function getSideNews() {
-  const { data } = await supabase
-    .from('news')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(4)
-  return data || []
-}
-
 async function getAllNews() {
   const { data } = await supabase
     .from('news')
@@ -162,17 +153,6 @@ async function getExchangeRates() {
 }
 
 // ============================================================
-// دالة جلب الجريدة اليومية (مهمة)
-// ============================================================
-async function getDailyBrief() {
-  const { data } = await supabase
-    .from('daily_brief')
-    .select('*')
-    .order('order_index', { ascending: true })
-  return data || []
-}
-
-// ============================================================
 // النصوص الثابتة
 // ============================================================
 const economicAnalysisText = `تحليلات اقتصادية حصرية يقدمها فريق ديب سورس نيوز.`
@@ -195,13 +175,12 @@ const stats = [
 // المكون الرئيسي
 // ============================================================
 export default async function Home() {
-  const [hero, breakingNews, allNews, sliderNews, exchangeRates, dailyBrief] = await Promise.all([
+  const [hero, breakingNews, allNews, sliderNews, exchangeRates] = await Promise.all([
     getHeroSection(),
     getBreakingNews(),
     getAllNews(),
     getSliderNews(),
     getExchangeRates(),
-    getDailyBrief(),  // تمت إضافة هذه الدالة
   ])
 
   const showHero = hero.is_enabled !== false
@@ -614,12 +593,22 @@ export default async function Home() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {dailyBrief.map((item, idx) => (
-              <a key={idx} href={item.link_url || '#'} className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
-                <p className="text-orange-400 text-xs font-bold mb-1">{item.section_title}</p>
-                <p className="text-white text-xs">{item.title}</p>
-              </a>
-            ))}
+            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
+              <p className="text-orange-400 text-xs font-bold mb-1">العنوان الرئيسي</p>
+              <p className="text-white text-xs">التطورات التكنولوجية في المنطقة العربية</p>
+            </div>
+            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
+              <p className="text-blue-400 text-xs font-bold mb-1">الاقتصاد اليوم</p>
+              <p className="text-white text-xs">أسعار النفط ترتفع وسط توقعات إيجابية</p>
+            </div>
+            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
+              <p className="text-green-400 text-xs font-bold mb-1">التكنولوجيا</p>
+              <p className="text-white text-xs">ثورة الذكاء الاصطناعي تشعل المنافسة</p>
+            </div>
+            <div className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
+              <p className="text-purple-400 text-xs font-bold mb-1">الرياضة</p>
+              <p className="text-white text-xs">استعدادات مكثفة للمباراة النهائية</p>
+            </div>
           </div>
         </div>
         <div className="border-t border-gray-800">
