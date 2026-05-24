@@ -10,10 +10,7 @@ const OWNER_ROLE = 'owner'
 // دالة مساعدة لإرسال حدث تغيير حالة المصادقة
 const emitAuthChange = () => {
   if (typeof window !== 'undefined') {
-    // إرسال حدث مخصص يمكن للمكونات الاستماع إليه
     window.dispatchEvent(new Event('authChange'))
-    
-    // أيضاً إرسال حدث تغيير في localStorage للمكونات الأخرى
     const event = new StorageEvent('storage', {
       key: 'admin',
       newValue: localStorage.getItem('admin'),
@@ -26,9 +23,7 @@ const emitAuthChange = () => {
 
 // تسجيل الدخول
 export async function login(email: string, password: string) {
-  // التحقق من البريد وكلمة المرور
   if (email === OWNER_EMAIL && password === OWNER_PASSWORD) {
-    // إنشاء كائن المدير بنفس التنسيق المستخدم في OwnerPage
     const adminData = {
       id: OWNER_ID,
       username: email.split('@')[0],
@@ -37,7 +32,6 @@ export async function login(email: string, password: string) {
       email: OWNER_EMAIL,
     }
     
-    // تخزين بيانات المالك (بصيغتين للتوافق)
     if (typeof window !== 'undefined') {
       localStorage.setItem('isOwner', 'true')
       localStorage.setItem('ownerEmail', email)
@@ -45,7 +39,6 @@ export async function login(email: string, password: string) {
       localStorage.setItem('admin', JSON.stringify(adminData))
     }
     
-    // إرسال حدث التغيير
     emitAuthChange()
     
     return { 
@@ -66,14 +59,12 @@ export function logout() {
     localStorage.removeItem('admin')
   }
   
-  // إرسال حدث التغيير
   emitAuthChange()
 }
 
 // التحقق من حالة تسجيل الدخول
 export function isAuthenticated(): boolean {
   if (typeof window !== 'undefined') {
-    // التحقق من وجود أي من المفاتيح (للتوافق مع الإصدارات السابقة)
     return localStorage.getItem('isOwner') === 'true' || localStorage.getItem('admin') !== null
   }
   return false
@@ -82,7 +73,6 @@ export function isAuthenticated(): boolean {
 // جلب بيانات المالك الحالي
 export function getCurrentAdmin(): { email: string | null; name: string | null; isAuthenticated: boolean; role?: string; id?: number } {
   if (typeof window !== 'undefined') {
-    // محاولة جلب البيانات من admin أولاً
     const adminStr = localStorage.getItem('admin')
     if (adminStr) {
       try {
@@ -99,7 +89,6 @@ export function getCurrentAdmin(): { email: string | null; name: string | null; 
       }
     }
     
-    // الرجوع إلى البيانات القديمة
     return {
       email: localStorage.getItem('ownerEmail'),
       name: localStorage.getItem('ownerName'),
