@@ -1,0 +1,18 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/about/page": "/about",
+  "/admin/page": "/admin",
+  "/api/search/route": "/api/search",
+  "/category/[slug]/page": "/category/[slug]",
+  "/dashboard/create/page": "/dashboard/create",
+  "/dashboard/login/page": "/dashboard/login",
+  "/dashboard/page": "/dashboard",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login",
+  "/news/[slug]/page": "/news/[slug]",
+  "/owner/page": "/owner",
+  "/page": "/",
+  "/search/page": "/search",
+  "/test-db/page": "/test-db"
+}
