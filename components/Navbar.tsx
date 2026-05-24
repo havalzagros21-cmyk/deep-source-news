@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { FaBars, FaTimes, FaTelegram, FaMoon, FaSun, FaSignOutAlt } from 'react-icons/fa'
 import { isAuthenticated, logout } from '../lib/auth'
 import { useRouter } from 'next/navigation'
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Navbar() {
   const router = useRouter()
@@ -13,10 +14,8 @@ export default function Navbar() {
   const [adminName, setAdminName] = useState('')
   const [darkMode, setDarkMode] = useState(false)
 
-  // دالة التحقق من حالة المصادقة
   const checkAuthStatus = useCallback(() => {
     setIsOwner(isAuthenticated())
-    // يمكن إضافة اسم المدير هنا إذا أردت عرضه
     try {
       const admin = localStorage.getItem('admin')
       if (admin) {
@@ -28,7 +27,6 @@ export default function Navbar() {
     }
   }, [])
 
-  // دالة تسجيل الخروج
   const handleLogout = () => {
     logout()
     setIsOwner(false)
@@ -38,24 +36,20 @@ export default function Navbar() {
   }
 
   useEffect(() => {
-    // التحقق الأولي
     checkAuthStatus()
 
-    // إعدادات الوضع المظلم
     const isDark = localStorage.getItem('theme') === 'dark'
     setDarkMode(isDark)
     if (isDark) {
       document.documentElement.classList.add('dark')
     }
 
-    // الاستماع إلى التغيرات في localStorage (عند تسجيل الدخول/الخروج من نوافذ أخرى)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'admin') {
         checkAuthStatus()
       }
     }
 
-    // حدث مخصص للتسجيل/الخروج من نفس الصفحة
     const handleAuthChange = () => {
       checkAuthStatus()
     }
@@ -80,7 +74,6 @@ export default function Navbar() {
     }
   }
 
-  // الروابط العامة
   const publicLinks = [
     { name: 'الرئيسية', href: '/' },
     { name: 'سياسة', href: '/category/politics' },
@@ -92,7 +85,6 @@ export default function Navbar() {
     { name: 'عن الموقع', href: '/about' },
   ]
 
-  // روابط الإدارة (تظهر فقط للمالك)
   const adminLinks = [
     { name: 'لوحة المالك', href: '/owner' },
   ]
@@ -103,7 +95,6 @@ export default function Navbar() {
     <nav className="bg-gray-900/95 dark:bg-black/95 backdrop-blur-md sticky top-0 z-50 border-b border-gray-800 shadow-lg">
       <div className="container-custom">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <Link 
             href="/" 
             className="text-xl md:text-2xl font-bold tracking-tight hover:opacity-80 transition-opacity duration-300 flex-shrink-0"
@@ -113,7 +104,6 @@ export default function Navbar() {
             <span className="text-gray-400 text-sm mr-1">News</span>
           </Link>
 
-          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 lg:gap-3 xl:gap-4 flex-wrap">
             {navLinks.map((link) => (
               <Link 
@@ -125,7 +115,6 @@ export default function Navbar() {
               </Link>
             ))}
             
-            {/* زر تسجيل الخروج (يظهر فقط للمالك) */}
             {isOwner && (
               <button
                 onClick={handleLogout}
@@ -136,7 +125,6 @@ export default function Navbar() {
               </button>
             )}
             
-            {/* Telegram Link */}
             <a 
               href="https://t.me/deepsourc" 
               target="_blank" 
@@ -147,7 +135,9 @@ export default function Navbar() {
               <span>تليجرام</span>
             </a>
             
-            {/* Dark/Light Mode Toggle */}
+            {/* زر تغيير اللغة - ترجمة فورية */}
+            <LanguageSwitcher />
+            
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-all duration-300 hover:scale-110 active:scale-95"
@@ -157,7 +147,6 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
           <button 
             onClick={() => setIsOpen(!isOpen)} 
             className="md:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
@@ -166,7 +155,6 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         <div className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="py-4 border-t border-gray-800 space-y-1">
             {navLinks.map((link) => (
@@ -180,7 +168,6 @@ export default function Navbar() {
               </Link>
             ))}
             
-            {/* زر تسجيل الخروج في القائمة الجوالة */}
             {isOwner && (
               <button
                 onClick={handleLogout}
