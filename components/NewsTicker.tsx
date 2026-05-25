@@ -8,7 +8,9 @@ import '../lib/i18n'
 
 interface TickerItem {
   id: number
-  text_key: string
+  text_content_ar: string
+  text_content_en: string
+  text_content_ku: string
   link_url: string | null
   link_text: string | null
   order_index: number
@@ -20,6 +22,7 @@ export default function NewsTicker() {
   const { t, i18n } = useTranslation()
   const [items, setItems] = useState<TickerItem[]>([])
   const [loading, setLoading] = useState(true)
+  const currentLocale = i18n.language
 
   const fetchTickerItems = async () => {
     try {
@@ -56,15 +59,18 @@ export default function NewsTicker() {
 
   if (loading || items.length === 0) return null
 
-  // بناء النص باستخدام الترجمة التلقائية
+  // اختيار النص حسب اللغة الحالية
   const repeatedText = items
     .map(item => {
-      const translatedText = t(item.text_key, { defaultValue: item.text_key })
+      let text = ''
+      if (currentLocale === 'ar') text = item.text_content_ar
+      else if (currentLocale === 'en') text = item.text_content_en
+      else text = item.text_content_ku || item.text_content_ar
       
       if (item.link_url) {
-        return `🔥 ${translatedText} ➜ ${item.link_text || t('readMore')} | `
+        return `🔥 ${text} ➜ ${item.link_text || t('readMore')} | `
       }
-      return `🔥 ${translatedText} | `
+      return `🔥 ${text} | `
     })
     .join(' ')
     .repeat(5)
