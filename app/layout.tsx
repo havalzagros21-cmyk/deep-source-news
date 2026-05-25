@@ -1,6 +1,7 @@
 import './globals.css'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import ClientLayout from '../components/ClientLayout'
 
 export const metadata = {
   title: 'ديب سورس نيوز | تحليلات معمقة',
@@ -13,13 +14,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-scroll-behavior="smooth">
       <body className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <Navbar />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
+        <ClientLayout>
+          <Navbar />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+        </ClientLayout>
       </body>
     </html>
   )

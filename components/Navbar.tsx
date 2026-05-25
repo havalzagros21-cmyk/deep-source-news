@@ -3,16 +3,25 @@
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { FaBars, FaTimes, FaTelegram, FaMoon, FaSun, FaSignOutAlt } from 'react-icons/fa'
+import { useTranslation } from 'react-i18next'
 import { isAuthenticated, logout } from '../lib/auth'
 import { useRouter } from 'next/navigation'
 import LanguageSwitcher from './LanguageSwitcher'
+import '../lib/i18n'
 
 export default function Navbar() {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [adminName, setAdminName] = useState('')
   const [darkMode, setDarkMode] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // منع الـ hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const checkAuthStatus = useCallback(() => {
     setIsOwner(isAuthenticated())
@@ -74,22 +83,44 @@ export default function Navbar() {
     }
   }
 
+  // الروابط العامة
   const publicLinks = [
-    { name: 'الرئيسية', href: '/' },
-    { name: 'سياسة', href: '/category/politics' },
-    { name: 'اقتصاد', href: '/category/economy' },
-    { name: 'تكنولوجيا', href: '/category/tech' },
-    { name: 'آراء', href: '/category/opinions' },
-    { name: 'أبراج الفلك', href: '/category/zodiac' },
-    { name: 'منوعات', href: '/category/misc' },
-    { name: 'عن الموقع', href: '/about' },
+    { name: mounted ? t('home') : 'الرئيسية', href: '/' },
+    { name: mounted ? t('politics') : 'سياسة', href: '/category/politics' },
+    { name: mounted ? t('economy') : 'اقتصاد', href: '/category/economy' },
+    { name: mounted ? t('tech') : 'تكنولوجيا', href: '/category/tech' },
+    { name: mounted ? t('opinions') : 'آراء', href: '/category/opinions' },
+    { name: mounted ? t('zodiac') : 'أبراج الفلك', href: '/category/zodiac' },
+    { name: mounted ? t('misc') : 'منوعات', href: '/category/misc' },
+    { name: mounted ? t('about') : 'عن الموقع', href: '/about' },
   ]
 
   const adminLinks = [
-    { name: 'لوحة المالك', href: '/owner' },
+    { name: mounted ? t('ownerPanel') : 'لوحة المالك', href: '/owner' },
   ]
 
   const navLinks = isOwner ? [...publicLinks, ...adminLinks] : publicLinks
+
+  // عرض بسيط قبل التحميل
+  if (!mounted) {
+    return (
+      <nav className="bg-gray-900/95 dark:bg-black/95 backdrop-blur-md sticky top-0 z-50 border-b border-gray-800 shadow-lg">
+        <div className="container-custom">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="text-xl md:text-2xl font-bold">
+              <span className="text-red-500">Deep</span>
+              <span className="text-white">Source</span>
+              <span className="text-gray-400 text-sm mr-1">News</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-4">
+              <div className="w-20 h-8 bg-gray-700 rounded animate-pulse"></div>
+              <div className="w-20 h-8 bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    )
+  }
 
   return (
     <nav className="bg-gray-900/95 dark:bg-black/95 backdrop-blur-md sticky top-0 z-50 border-b border-gray-800 shadow-lg">
@@ -121,7 +152,7 @@ export default function Navbar() {
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full transition-all duration-300 hover:scale-105 text-sm font-medium active:scale-95"
               >
                 <FaSignOutAlt className="text-sm" />
-                <span>تسجيل خروج</span>
+                <span>{mounted ? t('logout') : 'تسجيل خروج'}</span>
               </button>
             )}
             
@@ -132,10 +163,9 @@ export default function Navbar() {
               className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-1.5 rounded-full transition-all duration-300 hover:scale-105 text-sm font-medium active:scale-95"
             >
               <FaTelegram className="text-sm" />
-              <span>تليجرام</span>
+              <span>{mounted ? t('navTelegram') : 'تليجرام'}</span>
             </a>
             
-            {/* زر تغيير اللغة - ترجمة فورية */}
             <LanguageSwitcher />
             
             <button
@@ -174,7 +204,7 @@ export default function Navbar() {
                 className="flex items-center justify-center gap-2 w-full py-3 text-red-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition-all duration-200 text-sm"
               >
                 <FaSignOutAlt />
-                <span>تسجيل خروج</span>
+                <span>{mounted ? t('logout') : 'تسجيل خروج'}</span>
               </button>
             )}
             
@@ -186,7 +216,7 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               <FaTelegram />
-              <span>انضم لتليجرام</span>
+              <span>{mounted ? t('joinTelegram') : 'انضم لتليجرام'}</span>
             </a>
             
             <button
@@ -197,7 +227,7 @@ export default function Navbar() {
               className="flex items-center justify-center gap-2 w-full py-2 mt-2 rounded-lg bg-gray-800 hover:bg-gray-700 active:bg-gray-600 transition-all duration-300 text-sm"
             >
               {darkMode ? <FaSun className="text-yellow-400" /> : <FaMoon className="text-gray-300" />}
-              <span>{darkMode ? 'الوضع الفاتح' : 'الوضع المظلم'}</span>
+              <span>{darkMode ? (mounted ? t('lightMode') : 'الوضع الفاتح') : (mounted ? t('darkMode') : 'الوضع المظلم')}</span>
             </button>
           </div>
         </div>

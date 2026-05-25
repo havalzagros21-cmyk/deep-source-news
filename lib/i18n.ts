@@ -1,7 +1,5 @@
-// lib/i18n-client.ts
-'use client';
-
-import i18next from 'i18next';
+// lib/i18n.ts
+import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
@@ -11,8 +9,8 @@ import en from '../messages/en.json';
 import ku from '../messages/ku.json';
 
 // تهيئة i18next
-if (typeof window !== 'undefined' && !i18next.isInitialized) {
-  i18next
+if (!i18n.isInitialized) {
+  i18n
     .use(initReactI18next)
     .use(LanguageDetector)
     .init({
@@ -33,4 +31,4 @@ if (typeof window !== 'undefined' && !i18next.isInitialized) {
     });
 }
 
-export default i18next;
+export default i18n;

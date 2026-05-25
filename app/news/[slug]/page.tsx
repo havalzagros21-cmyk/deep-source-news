@@ -1,156 +1,118 @@
 'use client'
 
 import { supabase } from '../../../lib/supabase'
-import { FaCalendar, FaEye, FaShareAlt } from 'react-icons/fa'
-import { notFound, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { use } from 'react'
+import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { translateText } from '../../../lib/translate'
+import { FaCalendarAlt, FaEye } from 'react-icons/fa'
+import { notFound } from 'next/navigation'
+import '../../../lib/i18n'
 
-// دالة لاستخراج YouTube ID
-function getYouTubeId(url: string) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-    const match = url.match(regExp)
-    return (match && match[2].length === 11) ? match[2] : ''
+async function getNewsBySlug(slug: string) {
+  const decodedSlug = decodeURIComponent(slug)
+  
+  const { data, error } = await supabase
+    .from('news')
+    .select('*')
+    .eq('slug', decodedSlug)
+    .single()
+
+  if (error) {
+    return null
+  }
+  return data
 }
 
-// دالة لاستخراج Vimeo ID
-function getVimeoId(url: string) {
-    const regExp = /vimeo\.com\/(\d+)/
-    const match = url.match(regExp)
-    return match ? match[1] : ''
-}
+export default function NewsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params)
+  const { t, i18n } = useTranslation()
+  const [news, setNews] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [translating, setTranslating] = useState(false)
+  const [translatedTitle, setTranslatedTitle] = useState('')
+  const [translatedContent, setTranslatedContent] = useState('')
+  const [translatedCategory, setTranslatedCategory] = useState('')
 
-export default function NewsDetailPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
-    const router = useRouter()
-    const [news, setNews] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+  const currentLocale = i18n.language
 
-    useEffect(() => {
-        async function fetchNews() {
-            const resolvedParams = await params
-            const slug = resolvedParams.slug
-            const decodedSlug = decodeURIComponent(slug)
-            
-            const { data, error } = await supabase
-                .from('news')
-                .select('*')
-                .eq('slug', decodedSlug)
-                .single()
+  // جلب البيانات
+  useEffect(() => {
+    getNewsBySlug(slug).then(data => {
+      setNews(data)
+      setLoading(false)
+    })
+  }, [slug])
 
-            if (error || !data) {
-                notFound()
-                return
-            }
-
-            setNews(data)
-
-            // زيادة عدد المشاهدات
-            await supabase
-                .from('news')
-                .update({ views: (data.views || 0) + 1 })
-                .eq('slug', decodedSlug)
-            
-            setLoading(false)
-        }
-        
-        fetchNews()
-    }, [params])
-
-    const handleShare = () => {
-        if (news) {
-            window.open(`https://wa.me/?text=${encodeURIComponent(news.title + ' - ' + window.location.href)}`, '_blank')
-        }
+  // ترجمة المحتوى عندما تتغير اللغة
+  useEffect(() => {
+    const translateNews = async () => {
+      if (!news) return
+      
+      setTranslating(true)
+      
+      if (currentLocale === 'ar') {
+        setTranslatedTitle(news.title)
+        setTranslatedContent(news.content)
+        setTranslatedCategory(news.category || t('news'))
+      } else {
+        const [title, content, category] = await Promise.all([
+          translateText(news.title, currentLocale),
+          translateText(news.content, currentLocale),
+          translateText(news.category || t('news'), currentLocale),
+        ])
+        setTranslatedTitle(title)
+        setTranslatedContent(content)
+        setTranslatedCategory(category)
+      }
+      
+      setTranslating(false)
     }
-
-    if (loading) {
-        return (
-            <div className="container-custom py-20 text-center">
-                <div className="inline-block w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-gray-500">جاري تحميل الخبر...</p>
-            </div>
-        )
+    
+    if (!loading && news) {
+      translateNews()
     }
+  }, [currentLocale, loading, news, t])
 
-    if (!news) {
-        return notFound()
-    }
-
-    const date = new Date(news.created_at).toLocaleDateString('ar-EG')
-
+  if (loading || translating) {
     return (
-        <article className="container-custom py-12 max-w-4xl mx-auto">
-            {/* التصنيف */}
-            <span className="text-red-600 text-sm font-bold uppercase">
-                {news.category || 'عام'}
-            </span>
-            
-            {/* العنوان */}
-            <h1 className="text-4xl md:text-5xl font-bold mt-4">{news.title}</h1>
-            
-            {/* معلومات الخبر */}
-            <div className="flex items-center gap-6 mt-6 text-gray-500 border-b border-gray-200 dark:border-gray-800 pb-6 flex-wrap">
-                <span className="flex items-center gap-1">
-                    <FaCalendar /> {date}
-                </span>
-                <span className="flex items-center gap-1">
-                    <FaEye /> {news.views || 0} مشاهدة
-                </span>
-                <button 
-                    onClick={handleShare}
-                    className="hover:text-green-600 cursor-pointer flex items-center gap-1 transition-colors"
-                >
-                    <FaShareAlt /> مشاركة
-                </button>
-            </div>
-            
-            {/* الصورة */}
-            {news.image && (
-                <img 
-                    src={news.image} 
-                    alt={news.title} 
-                    className="w-full rounded-xl my-8 max-h-96 object-cover" 
-                />
-            )}
-            
-            {/* عرض الفيديو */}
-            {news.video_url && news.video_type && news.video_type !== 'none' && (
-                <div className="my-8">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        🎬 فيديو الخبر
-                    </h2>
-                    <div className="rounded-xl overflow-hidden bg-black">
-                        {news.video_type === 'upload' && (
-                            <video controls className="w-full" preload="metadata">
-                                <source src={news.video_url} />
-                                متصفحك لا يدعم تشغيل الفيديو
-                            </video>
-                        )}
-                        {news.video_type === 'youtube' && (
-                            <iframe 
-                                src={`https://www.youtube.com/embed/${getYouTubeId(news.video_url)}`}
-                                className="w-full aspect-video"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
-                        )}
-                        {news.video_type === 'vimeo' && (
-                            <iframe 
-                                src={`https://player.vimeo.com/video/${getVimeoId(news.video_url)}`}
-                                className="w-full aspect-video"
-                                frameBorder="0"
-                                allow="autoplay; fullscreen; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
-                        )}
-                    </div>
-                </div>
-            )}
-            
-            {/* المحتوى */}
-            <div 
-                className="prose dark:prose-invert max-w-none text-lg leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: news.content }} 
-            />
-        </article>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
     )
+  }
+
+  if (!news) {
+    notFound()
+  }
+
+  return (
+    <div className="container-custom py-8 md:py-12">
+      <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        {translatedTitle}
+      </h1>
+      
+      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6 pb-4 border-b">
+        <div className="flex items-center gap-1">
+          <FaCalendarAlt size={14} />
+          <span>{new Date(news.created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <FaEye size={14} />
+          <span>{(news.views || 0).toLocaleString()} {t('views')}</span>
+        </div>
+        <div className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs">
+          {translatedCategory}
+        </div>
+      </div>
+
+      {news.image && (
+        <img src={news.image} alt={translatedTitle} className="w-full h-auto max-h-[500px] object-cover rounded-xl mb-8" />
+      )}
+
+      <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+        {translatedContent}
+      </div>
+    </div>
+  )
 }

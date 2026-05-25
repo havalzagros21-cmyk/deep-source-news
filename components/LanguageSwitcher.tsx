@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaGlobe, FaCheck } from 'react-icons/fa';
-import i18n from '../lib/i18n-client';
+import '../lib/i18n';
 
 const languages = [
   { code: 'ar', name: 'العربية', flag: '🇸🇦', dir: 'rtl' },
@@ -20,7 +20,7 @@ export default function LanguageSwitcher() {
     const savedLang = localStorage.getItem('i18nextLng') || 'ar';
     setCurrentLang(savedLang);
     i18nInstance.changeLanguage(savedLang);
-    
+
     const langData = languages.find(l => l.code === savedLang);
     if (langData) {
       document.documentElement.dir = langData.dir;
@@ -32,9 +32,9 @@ export default function LanguageSwitcher() {
     i18nInstance.changeLanguage(langCode);
     setCurrentLang(langCode);
     setIsOpen(false);
-    
+
     localStorage.setItem('i18nextLng', langCode);
-    
+
     const langData = languages.find(l => l.code === langCode);
     if (langData) {
       document.documentElement.dir = langData.dir;
@@ -59,11 +59,11 @@ export default function LanguageSwitcher() {
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          
+
           <div className="absolute left-0 top-full mt-2 bg-gray-800 rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden">
             {languages.map((lang) => (
               <button
