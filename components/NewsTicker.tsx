@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { FaNewspaper, FaCircle } from 'react-icons/fa'
-import '../lib/i18n'
+
+// ============================================================
+// الشريط المتحرك - نسخة كاملة مع الترجمة
+// ============================================================
 
 interface TickerItem {
   id: number
@@ -33,11 +36,20 @@ export default function NewsTicker() {
         .eq('is_active', true)
         .order('order_index', { ascending: true })
       
-      if (error) throw error
-      setItems(data || [])
-    } catch (error) {
-      console.error('Error fetching ticker items:', error)
-      setItems([])
+      if (error) {
+        console.error('❌ خطأ في جلب البيانات:', error)
+        return
+      }
+      
+      if (data && data.length > 0) {
+        console.log('✅ تم جلب البيانات:', data.length, 'عنصر')
+        console.log('🌐 اللغة الحالية:', currentLocale)
+        setItems(data)
+      } else {
+        console.log('⚠️ لا توجد بيانات في الشريط')
+      }
+    } catch (err) {
+      console.error('❌ خطأ:', err)
     } finally {
       setLoading(false)
     }
@@ -45,13 +57,24 @@ export default function NewsTicker() {
 
   useEffect(() => {
     fetchTickerItems()
+  }, [])
 
-    // تحديث فوري عند إضافة عناصر جديدة
+  // تحديث فوري عند تغيير اللغة أو البيانات
+  useEffect(() => {
+    fetchTickerItems()
+  }, [currentLocale])
+
+  // الاشتراك في التغييرات الفورية (Realtime)
+  useEffect(() => {
     const channel = supabase
       .channel('ticker-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ticker_items' }, () => {
-        fetchTickerItems()
-      })
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'ticker_items' }, 
+        () => {
+          console.log('🔄 تم تغيير الشريط - تحديث فوري')
+          fetchTickerItems()
+        }
+      )
       .subscribe()
 
     return () => {
@@ -59,29 +82,34 @@ export default function NewsTicker() {
     }
   }, [])
 
-  // اختيار النص حسب اللغة الحالية
-  const getTextByLanguage = (item: TickerItem) => {
+  // الحصول على النص حسب اللغة الحالية
+  const getTextByLanguage = (item: TickerItem): string => {
     switch (currentLocale) {
       case 'ar':
-        return item.text_content_ar
+        return item.text_content_ar || item.text_content_ar
       case 'en':
-        return item.text_content_en
+        return item.text_content_en || item.text_content_ar
       case 'ku':
-        return item.text_content_ku
+        return item.text_content_ku || item.text_content_ar
       default:
         return item.text_content_ar
     }
   }
 
+  // حالة التحميل
   if (loading) {
     return (
       <div className="bg-gray-900/95 border-y border-red-800/30 shadow-lg overflow-hidden py-2">
-        <div className="text-center text-gray-400 text-sm">جاري التحميل...</div>
+        <div className="text-center text-gray-400 text-sm">
+          {t('loading') || 'جاري التحميل...'}
+        </div>
       </div>
     )
   }
 
+  // لا توجد بيانات
   if (items.length === 0) {
+    console.log('ℹ️ لا توجد عناصر نشطة في الشريط')
     return null
   }
 
