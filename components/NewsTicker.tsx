@@ -24,8 +24,6 @@ export default function NewsTicker() {
   const [loading, setLoading] = useState(true)
   const currentLocale = i18n.language
 
-  console.log('Current language:', currentLocale) // للتأكد من اللغة
-
   const fetchTickerItems = async () => {
     try {
       const { data, error } = await supabase
@@ -35,7 +33,6 @@ export default function NewsTicker() {
         .order('order_index', { ascending: true })
       
       if (error) throw error
-      console.log('Ticker items:', data) // للتأكد من البيانات
       setItems(data || [])
     } catch (error) {
       console.error('Error fetching ticker items:', error)
@@ -67,14 +64,11 @@ export default function NewsTicker() {
     .map(item => {
       let text = ''
       if (currentLocale === 'ar') {
-        text = item.text_content_ar || item.text_content_ar
-        console.log('Using Arabic:', text)
+        text = item.text_content_ar
       } else if (currentLocale === 'en') {
-        text = item.text_content_en || item.text_content_ar
-        console.log('Using English:', text)
+        text = item.text_content_en
       } else {
         text = item.text_content_ku || item.text_content_ar
-        console.log('Using Kurdish:', text)
       }
       
       if (item.link_url) {
