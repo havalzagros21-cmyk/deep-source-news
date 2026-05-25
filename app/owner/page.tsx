@@ -1,3 +1,4 @@
+```tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -53,7 +54,10 @@ interface HeroSection {
 
 interface TickerItem {
   id: number
-  text_content: string
+  text_key: string
+  text_content_ar: string
+  text_content_en: string
+  text_content_ku: string
   link_url: string | null
   link_text: string | null
   order_index: number
@@ -125,7 +129,6 @@ interface SiteText {
   value_ku: string
 }
 
-// إعدادات القوالب
 interface Template1Config {
   breakingNewsIds: string[]
   breakingNewsCount: number
@@ -229,7 +232,9 @@ export default function OwnerPage() {
   // الشريط المتحرك
   const [tickerItems, setTickerItems] = useState<TickerItem[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
-  const [newTickerText, setNewTickerText] = useState('')
+  const [newTickerTextAr, setNewTickerTextAr] = useState('')
+  const [newTickerTextEn, setNewTickerTextEn] = useState('')
+  const [newTickerTextKu, setNewTickerTextKu] = useState('')
   const [newTickerLink, setNewTickerLink] = useState('')
   const [newTickerLinkText, setNewTickerLinkText] = useState('')
   const [newTickerIsExternal, setNewTickerIsExternal] = useState(false)
@@ -793,19 +798,29 @@ export default function OwnerPage() {
   }
 
   const handleAddToTicker = async () => {
-    if (!newTickerText.trim()) {
-      setMessage('❌ الرجاء إدخال نص للعنصر')
+    if (!newTickerTextAr.trim() || !newTickerTextEn.trim() || !newTickerTextKu.trim()) {
+      setMessage('❌ الرجاء إدخال النص باللغات الثلاث')
       return
     }
-    if (newTickerText.length > 200) {
-      setMessage('❌ النص طويل جداً (الحد الأقصى 200 حرف)')
-      return
-    }
-    const { error } = await addCustomTickerItem(newTickerText, newTickerLink || '', newTickerLinkText || '', newTickerIsExternal)
+    
+    const textKey = `ticker_${Date.now()}`
+    
+    const { error } = await addCustomTickerItem(
+      textKey,
+      newTickerTextAr,
+      newTickerTextEn,
+      newTickerTextKu,
+      newTickerLink || '',
+      newTickerLinkText || '',
+      newTickerIsExternal
+    )
+    
     if (!error) {
       setMessage('✅ تم إضافة العنصر إلى الشريط')
       setShowAddModal(false)
-      setNewTickerText('')
+      setNewTickerTextAr('')
+      setNewTickerTextEn('')
+      setNewTickerTextKu('')
       setNewTickerLink('')
       setNewTickerLinkText('')
       setNewTickerIsExternal(false)
@@ -1329,7 +1344,7 @@ export default function OwnerPage() {
         </div>
 
         {/* ============================================================
-            تبويب الرئيسية (تفعيل القوالب)
+            تبويب الرئيسية
         ============================================================ */}
         {activeTab === 'home' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
@@ -1475,15 +1490,12 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب النصوص القابلة للتعديل (مع politicalAnalysisText)
+            تبويب النصوص القابلة للتعديل
         ============================================================ */}
         {activeTab === 'sitetexts' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <FaLanguage className="text-red-600" /> 📝 إدارة النصوص القابلة للتعديل
-            </h2>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><FaLanguage className="text-red-600" /> 📝 إدارة النصوص القابلة للتعديل</h2>
             <p className="text-gray-500 text-sm mb-6">يمكنك تعديل النصوص التي تظهر في الصفحة الرئيسية (التحليلات الاقتصادية، رؤيتنا، أبراج الفلك، تحليلات سياسية)</p>
-            
             <div className="space-y-6">
               {siteTexts.map((text) => (
                 <div key={text.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
@@ -1496,74 +1508,25 @@ export default function OwnerPage() {
                     </h3>
                     {editingSiteText?.id === text.id ? (
                       <div className="flex gap-2">
-                        <button onClick={handleUpdateSiteText} className="text-green-600 hover:text-green-700">
-                          <FaSave size={20} />
-                        </button>
-                        <button onClick={() => setEditingSiteText(null)} className="text-gray-500 hover:text-gray-600">
-                          <FaTimes size={20} />
-                        </button>
+                        <button onClick={handleUpdateSiteText} className="text-green-600 hover:text-green-700"><FaSave size={20} /></button>
+                        <button onClick={() => setEditingSiteText(null)} className="text-gray-500 hover:text-gray-600"><FaTimes size={20} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => setEditingSiteText(text)} className="text-blue-500 hover:text-blue-600">
-                        <FaEdit size={20} />
-                      </button>
+                      <button onClick={() => setEditingSiteText(text)} className="text-blue-500 hover:text-blue-600"><FaEdit size={20} /></button>
                     )}
                   </div>
-                  
                   {editingSiteText?.id === text.id ? (
                     <div className="space-y-4">
-                      <div>
-                        <label className="block font-bold text-sm mb-1 text-green-700 dark:text-green-400">🇸🇦 العربية</label>
-                        <textarea 
-                          value={editingSiteText.value_ar} 
-                          onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ar: e.target.value })}
-                          rows={6}
-                          maxLength={3000}
-                          className="w-full p-3 rounded-lg border dark:bg-gray-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-bold text-sm mb-1 text-blue-700 dark:text-blue-400">🇬🇧 English</label>
-                        <textarea 
-                          value={editingSiteText.value_en} 
-                          onChange={(e) => setEditingSiteText({ ...editingSiteText, value_en: e.target.value })}
-                          rows={6}
-                          maxLength={3000}
-                          className="w-full p-3 rounded-lg border dark:bg-gray-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-bold text-sm mb-1 text-purple-700 dark:text-purple-400">🏴󠁩󠁲󠁱󠁶󠁿 Kurdî</label>
-                        <textarea 
-                          value={editingSiteText.value_ku} 
-                          onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ku: e.target.value })}
-                          rows={6}
-                          maxLength={3000}
-                          className="w-full p-3 rounded-lg border dark:bg-gray-900"
-                        />
-                      </div>
+                      <div><label className="block font-bold text-sm mb-1 text-green-700 dark:text-green-400">🇸🇦 العربية</label><textarea value={editingSiteText.value_ar} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ar: e.target.value })} rows={6} maxLength={3000} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
+                      <div><label className="block font-bold text-sm mb-1 text-blue-700 dark:text-blue-400">🇬🇧 English</label><textarea value={editingSiteText.value_en} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_en: e.target.value })} rows={6} maxLength={3000} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
+                      <div><label className="block font-bold text-sm mb-1 text-purple-700 dark:text-purple-400">🏴 Kurdî</label><textarea value={editingSiteText.value_ku} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ku: e.target.value })} rows={6} maxLength={3000} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
                       <p className="text-xs text-gray-400">الحد الأقصى 3000 حرف</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
-                        <p className="text-xs text-green-600 dark:text-green-400 mb-1">🇸🇦 العربية</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">
-                          {text.value_ar || '(فارغ)'}
-                        </p>
-                      </div>
-                      <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-                        <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">🇬🇧 English</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">
-                          {text.value_en || '(Empty)'}
-                        </p>
-                      </div>
-                      <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg">
-                        <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">🏴󠁩󠁲󠁱󠁶󠁿 Kurdî</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">
-                          {text.value_ku || '(Vala)'}
-                        </p>
-                      </div>
+                      <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg"><p className="text-xs text-green-600 dark:text-green-400 mb-1">🇸🇦 العربية</p><p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">{text.value_ar || '(فارغ)'}</p></div>
+                      <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg"><p className="text-xs text-blue-600 dark:text-blue-400 mb-1">🇬🇧 English</p><p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">{text.value_en || '(Empty)'}</p></div>
+                      <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg"><p className="text-xs text-purple-600 dark:text-purple-400 mb-1">🏴 Kurdî</p><p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">{text.value_ku || '(Vala)'}</p></div>
                     </div>
                   )}
                 </div>
@@ -1573,20 +1536,36 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب الشريط المتحرك
+            تبويب الشريط المتحرك (مع الترجمة)
         ============================================================ */}
         {activeTab === 'ticker' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800 space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4"><h2 className="text-2xl font-bold">📢 إدارة الشريط المتحرك</h2><button onClick={() => setShowAddModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة عنصر جديد</button></div>
-            <p className="text-gray-500 text-sm">يمكنك إضافة أي نص تريده إلى الشريط (إعلانات، تنبيهات، روابط). العناصر النشطة فقط هي التي تظهر.</p>
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <h2 className="text-2xl font-bold">📢 إدارة الشريط المتحرك</h2>
+              <button onClick={() => setShowAddModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaPlus /> إضافة عنصر جديد</button>
+            </div>
+            <p className="text-gray-500 text-sm">يمكنك إضافة عناصر جديدة مع دعم ثلاث لغات (عربي، إنجليزي، كردي). العناصر النشطة فقط هي التي تظهر.</p>
             {tickerItems.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg"><p className="text-gray-500">لا توجد عناصر في الشريط بعد</p></div>
             ) : (
               <div className="space-y-3">
                 {tickerItems.map((item, index) => (
                   <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="flex items-center gap-4 flex-1"><span className="text-gray-400 text-sm w-8">{index + 1}</span><div className="flex-1"><p className="font-medium">{item.text_content}</p>{item.link_url && <p className="text-xs text-blue-500 mt-1">🔗 {item.link_url}</p>}</div></div>
-                    <div className="flex items-center gap-2"><button onClick={() => moveUp(index)} disabled={index === 0} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↑</button><button onClick={() => moveDown(index)} disabled={index === tickerItems.length - 1} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↓</button><button onClick={() => handleToggleActive(item.id, item.is_active)} className={`p-2 rounded ${item.is_active ? 'text-green-500' : 'text-gray-400'}`}>{item.is_active ? <FaEye /> : <FaEyeSlash />}</button><button onClick={() => handleRemoveFromTicker(item.id)} className="p-2 text-red-500 hover:text-red-700"><FaTrash /></button></div>
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="text-gray-400 text-sm w-8">{index + 1}</span>
+                      <div className="flex-1">
+                        <p className="font-medium text-green-600">🇸🇦 {item.text_content_ar}</p>
+                        <p className="text-xs text-blue-600">🇬🇧 {item.text_content_en}</p>
+                        <p className="text-xs text-purple-600">🏴 {item.text_content_ku}</p>
+                        {item.link_url && <p className="text-xs text-blue-500 mt-1">🔗 {item.link_url}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => moveUp(index)} disabled={index === 0} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↑</button>
+                      <button onClick={() => moveDown(index)} disabled={index === tickerItems.length - 1} className="p-2 text-gray-500 hover:text-blue-500 disabled:opacity-30">↓</button>
+                      <button onClick={() => handleToggleActive(item.id, item.is_active)} className={`p-2 rounded ${item.is_active ? 'text-green-500' : 'text-gray-400'}`}>{item.is_active ? <FaEye /> : <FaEyeSlash />}</button>
+                      <button onClick={() => handleRemoveFromTicker(item.id)} className="p-2 text-red-500 hover:text-red-700"><FaTrash /></button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1595,8 +1574,18 @@ export default function OwnerPage() {
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
                   <h3 className="text-xl font-bold mb-4">➕ إضافة عنصر جديد إلى الشريط</h3>
-                  <div className="space-y-4"><div><label className="block font-bold mb-2">النص *</label><input type="text" value={newTickerText} onChange={(e) => setNewTickerText(e.target.value)} placeholder="مثال: 🔥 عاجل: حدث مهم" className="w-full p-3 rounded-lg border dark:bg-gray-800" maxLength={200} /></div><div><label className="block font-bold mb-2">رابط (اختياري)</label><input type="text" value={newTickerLink} onChange={(e) => setNewTickerLink(e.target.value)} placeholder="/news/important-event" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div><label className="block font-bold mb-2">نص الرابط (اختياري)</label><input type="text" value={newTickerLinkText} onChange={(e) => setNewTickerLinkText(e.target.value)} placeholder="مثال: اقرأ المزيد" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div><div className="flex items-center gap-3"><input type="checkbox" id="isExternal" checked={newTickerIsExternal} onChange={(e) => setNewTickerIsExternal(e.target.checked)} className="w-5 h-5" /><label htmlFor="isExternal">رابط خارجي (يفتح في نافذة جديدة)</label></div></div>
-                  <div className="flex gap-3 mt-6"><button onClick={handleAddToTicker} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button><button onClick={() => { setShowAddModal(false); setNewTickerText(''); setNewTickerLink(''); setNewTickerLinkText(''); setNewTickerIsExternal(false); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
+                  <div className="space-y-4">
+                    <div><label className="block font-bold mb-2 text-green-600">🇸🇦 النص بالعربية *</label><input type="text" value={newTickerTextAr} onChange={(e) => setNewTickerTextAr(e.target.value)} placeholder="مثال: 🔥 عاجل: حدث مهم" className="w-full p-3 rounded-lg border dark:bg-gray-800" maxLength={200} /></div>
+                    <div><label className="block font-bold mb-2 text-blue-600">🇬🇧 النص بالإنجليزية *</label><input type="text" value={newTickerTextEn} onChange={(e) => setNewTickerTextEn(e.target.value)} placeholder="Example: 🔥 BREAKING: Important event" className="w-full p-3 rounded-lg border dark:bg-gray-800" maxLength={200} /></div>
+                    <div><label className="block font-bold mb-2 text-purple-600">🏴 النص بالكردية *</label><input type="text" value={newTickerTextKu} onChange={(e) => setNewTickerTextKu(e.target.value)} placeholder="Mînak: 🔥 Nûçe: Bûyerek girîng" className="w-full p-3 rounded-lg border dark:bg-gray-800" maxLength={200} /></div>
+                    <div><label className="block font-bold mb-2">رابط (اختياري)</label><input type="text" value={newTickerLink} onChange={(e) => setNewTickerLink(e.target.value)} placeholder="/news/important-event" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div><label className="block font-bold mb-2">نص الرابط (اختياري)</label><input type="text" value={newTickerLinkText} onChange={(e) => setNewTickerLinkText(e.target.value)} placeholder="مثال: اقرأ المزيد" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
+                    <div className="flex items-center gap-3"><input type="checkbox" id="isExternal" checked={newTickerIsExternal} onChange={(e) => setNewTickerIsExternal(e.target.checked)} className="w-5 h-5" /><label htmlFor="isExternal">رابط خارجي (يفتح في نافذة جديدة)</label></div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button onClick={handleAddToTicker} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button>
+                    <button onClick={() => { setShowAddModal(false); setNewTickerTextAr(''); setNewTickerTextEn(''); setNewTickerTextKu(''); setNewTickerLink(''); setNewTickerLinkText(''); setNewTickerIsExternal(false); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1710,13 +1699,13 @@ export default function OwnerPage() {
         ============================================================ */}
         {activeTab === 'template1' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><FaThLarge className="text-red-600" /> 🎨 تخصيص القالب الأول</h2>
+            <h2 className="text-2xl font-bold mb-6">🎨 تخصيص القالب الأول</h2>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600 border-b pb-2">🔴 العمود الأيمن (أخبار عاجلة)</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">العنوان</label><input type="text" value={template1Config.breakingNewsTitle} onChange={(e) => setTemplate1Config({ ...template1Config, breakingNewsTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد الأخبار</label><input type="number" min="1" max="10" value={template1Config.breakingNewsCount} onChange={(e) => setTemplate1Config({ ...template1Config, breakingNewsCount: parseInt(e.target.value) || 4 })} className="w-full p-2 rounded-lg border" /></div><div className="flex items-center gap-2"><input type="checkbox" checked={template1Config.economicAnalysisEnabled} onChange={(e) => setTemplate1Config({ ...template1Config, economicAnalysisEnabled: e.target.checked })} className="w-4 h-4" /><label>تفعيل التحليلات الاقتصادية</label></div><div><input type="text" value={template1Config.economicAnalysisTitle} onChange={(e) => setTemplate1Config({ ...template1Config, economicAnalysisTitle: e.target.value })} placeholder="عنوان التحليلات" className="w-full p-2 rounded-lg border mt-2" /></div></div></div>
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-green-600 border-b pb-2">🟢 العمود الأوسط (سلايدر + بطاقات)</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">عدد صور السلايدر</label><input type="number" min="1" max="10" value={template1Config.sliderCount} onChange={(e) => setTemplate1Config({ ...template1Config, sliderCount: parseInt(e.target.value) || 5 })} className="w-full p-2 rounded-lg border" /></div><div className="flex items-center gap-2"><input type="checkbox" checked={template1Config.sliderAutoPlay} onChange={(e) => setTemplate1Config({ ...template1Config, sliderAutoPlay: e.target.checked })} className="w-4 h-4" /><label>تشغيل تلقائي للسلايدر</label></div><div><label className="block text-sm font-bold mb-1">سرعة السلايدر (ملي ثانية)</label><input type="number" min="1000" max="10000" step="500" value={template1Config.sliderInterval} onChange={(e) => setTemplate1Config({ ...template1Config, sliderInterval: parseInt(e.target.value) || 5000 })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عنوان البطاقات الصغيرة</label><input type="text" value={template1Config.smallNewsTopTitle} onChange={(e) => setTemplate1Config({ ...template1Config, smallNewsTopTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد البطاقات الصغيرة</label><input type="number" min="1" max="6" value={template1Config.smallNewsTopCount} onChange={(e) => setTemplate1Config({ ...template1Config, smallNewsTopCount: parseInt(e.target.value) || 3 })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عنوان البطاقات الكبيرة</label><input type="text" value={template1Config.largeNewsTopTitle} onChange={(e) => setTemplate1Config({ ...template1Config, largeNewsTopTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد البطاقات الكبيرة</label><input type="number" min="1" max="6" value={template1Config.largeNewsTopCount} onChange={(e) => setTemplate1Config({ ...template1Config, largeNewsTopCount: parseInt(e.target.value) || 3 })} className="w-full p-2 rounded-lg border" /></div></div></div>
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-blue-600 border-b pb-2">🔵 العمود الأيسر (أخبار جانبية)</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">العنوان</label><input type="text" value={template1Config.sideNewsTitle} onChange={(e) => setTemplate1Config({ ...template1Config, sideNewsTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد الأخبار</label><input type="number" min="1" max="10" value={template1Config.sideNewsCount} onChange={(e) => setTemplate1Config({ ...template1Config, sideNewsCount: parseInt(e.target.value) || 4 })} className="w-full p-2 rounded-lg border" /></div><div className="flex items-center gap-2"><input type="checkbox" checked={template1Config.ourVisionEnabled} onChange={(e) => setTemplate1Config({ ...template1Config, ourVisionEnabled: e.target.checked })} className="w-4 h-4" /><label>تفعيل رؤيتنا</label></div><div><input type="text" value={template1Config.ourVisionTitle} onChange={(e) => setTemplate1Config({ ...template1Config, ourVisionTitle: e.target.value })} placeholder="عنوان رؤيتنا" className="w-full p-2 rounded-lg border mt-2" /></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600">🔴 العمود الأيمن</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">العنوان</label><input type="text" value={template1Config.breakingNewsTitle} onChange={(e) => setTemplate1Config({ ...template1Config, breakingNewsTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد الأخبار</label><input type="number" min="1" max="10" value={template1Config.breakingNewsCount} onChange={(e) => setTemplate1Config({ ...template1Config, breakingNewsCount: parseInt(e.target.value) || 4 })} className="w-full p-2 rounded-lg border" /></div><div className="flex items-center gap-2"><input type="checkbox" checked={template1Config.economicAnalysisEnabled} onChange={(e) => setTemplate1Config({ ...template1Config, economicAnalysisEnabled: e.target.checked })} className="w-4 h-4" /><label>تفعيل التحليلات الاقتصادية</label></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-green-600">🟢 العمود الأوسط</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">عدد صور السلايدر</label><input type="number" min="1" max="10" value={template1Config.sliderCount} onChange={(e) => setTemplate1Config({ ...template1Config, sliderCount: parseInt(e.target.value) || 5 })} className="w-full p-2 rounded-lg border" /></div><div className="flex items-center gap-2"><input type="checkbox" checked={template1Config.sliderAutoPlay} onChange={(e) => setTemplate1Config({ ...template1Config, sliderAutoPlay: e.target.checked })} className="w-4 h-4" /><label>تشغيل تلقائي</label></div><div><label className="block text-sm font-bold mb-1">عدد البطاقات الصغيرة</label><input type="number" min="1" max="6" value={template1Config.smallNewsTopCount} onChange={(e) => setTemplate1Config({ ...template1Config, smallNewsTopCount: parseInt(e.target.value) || 3 })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد البطاقات الكبيرة</label><input type="number" min="1" max="6" value={template1Config.largeNewsTopCount} onChange={(e) => setTemplate1Config({ ...template1Config, largeNewsTopCount: parseInt(e.target.value) || 3 })} className="w-full p-2 rounded-lg border" /></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-blue-600">🔵 العمود الأيسر</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">العنوان</label><input type="text" value={template1Config.sideNewsTitle} onChange={(e) => setTemplate1Config({ ...template1Config, sideNewsTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">عدد الأخبار</label><input type="number" min="1" max="10" value={template1Config.sideNewsCount} onChange={(e) => setTemplate1Config({ ...template1Config, sideNewsCount: parseInt(e.target.value) || 4 })} className="w-full p-2 rounded-lg border" /></div><div className="flex items-center gap-2"><input type="checkbox" checked={template1Config.ourVisionEnabled} onChange={(e) => setTemplate1Config({ ...template1Config, ourVisionEnabled: e.target.checked })} className="w-4 h-4" /><label>تفعيل رؤيتنا</label></div></div></div>
             </div>
-            <div className="mt-6 flex justify-center"><button onClick={saveTemplate1Config} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ جميع إعدادات القالب الأول</button></div>
+            <div className="mt-6 flex justify-center"><button onClick={saveTemplate1Config} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ إعدادات القالب الأول</button></div>
           </div>
         )}
 
@@ -1725,13 +1714,13 @@ export default function OwnerPage() {
         ============================================================ */}
         {activeTab === 'template2' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><FaLayerGroup className="text-red-600" /> 🎨 تخصيص القالب الثاني</h2>
+            <h2 className="text-2xl font-bold mb-6">🎨 تخصيص القالب الثاني</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600 border-b pb-2">📰 الخبر الرئيسي الكبير</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">اختيار الخبر</label><select value={template2Config.mainNewsId} onChange={(e) => setTemplate2Config({ ...template2Config, mainNewsId: e.target.value })} className="w-full p-2 rounded-lg border"><option value="">-- اختر خبراً --</option>{allNewsOptions.map(news => (<option key={news.id} value={news.id}>{news.title.substring(0, 50)}</option>))}</select></div><div><label className="block text-sm font-bold mb-1">ارتفاع الصورة</label><select value={template2Config.mainNewsImageHeight} onChange={(e) => setTemplate2Config({ ...template2Config, mainNewsImageHeight: e.target.value })} className="w-full p-2 rounded-lg border"><option value="h-64">متوسط (h-64)</option><option value="h-80">كبير (h-80)</option><option value="h-96">كبير جداً (h-96)</option></select></div><div><label className="block text-sm font-bold mb-1">حجم العنوان</label><select value={template2Config.mainNewsTitleSize} onChange={(e) => setTemplate2Config({ ...template2Config, mainNewsTitleSize: e.target.value })} className="w-full p-2 rounded-lg border"><option value="text-2xl">كبير</option><option value="text-3xl">كبير جداً</option></select></div><div><label className="block text-sm font-bold mb-1">عدد أسطر الوصف</label><input type="number" min="1" max="5" value={template2Config.mainNewsDescriptionLines} onChange={(e) => setTemplate2Config({ ...template2Config, mainNewsDescriptionLines: parseInt(e.target.value) || 3 })} className="w-full p-2 rounded-lg border" /></div></div></div>
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-green-600 border-b pb-2">📌 الخبرين الوسط</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">اختيار الخبر الأول</label><select value={template2Config.middleNewsIds[0] || ''} onChange={(e) => { const newIds = [...template2Config.middleNewsIds]; newIds[0] = e.target.value; setTemplate2Config({ ...template2Config, middleNewsIds: newIds }) }} className="w-full p-2 rounded-lg border"><option value="">-- اختر خبراً --</option>{allNewsOptions.filter(n => n.id !== template2Config.mainNewsId).map(news => (<option key={news.id} value={news.id}>{news.title.substring(0, 40)}</option>))}</select></div><div><label className="block text-sm font-bold mb-1">اختيار الخبر الثاني</label><select value={template2Config.middleNewsIds[1] || ''} onChange={(e) => { const newIds = [...template2Config.middleNewsIds]; newIds[1] = e.target.value; setTemplate2Config({ ...template2Config, middleNewsIds: newIds }) }} className="w-full p-2 rounded-lg border"><option value="">-- اختر خبراً --</option>{allNewsOptions.filter(n => n.id !== template2Config.mainNewsId && n.id !== template2Config.middleNewsIds[0]).map(news => (<option key={news.id} value={news.id}>{news.title.substring(0, 40)}</option>))}</select></div><div><label className="block text-sm font-bold mb-1">ارتفاع الصورة</label><select value={template2Config.middleNewsImageHeight} onChange={(e) => setTemplate2Config({ ...template2Config, middleNewsImageHeight: e.target.value })} className="w-full p-2 rounded-lg border"><option value="h-48">متوسط</option><option value="h-56">كبير</option></select></div><div><label className="block text-sm font-bold mb-1">حجم العنوان</label><select value={template2Config.middleNewsTitleSize} onChange={(e) => setTemplate2Config({ ...template2Config, middleNewsTitleSize: e.target.value })} className="w-full p-2 rounded-lg border"><option value="text-lg">متوسط</option><option value="text-xl">كبير</option></select></div><div><label className="block text-sm font-bold mb-1">عدد أسطر الوصف</label><input type="number" min="1" max="4" value={template2Config.middleNewsDescriptionLines} onChange={(e) => setTemplate2Config({ ...template2Config, middleNewsDescriptionLines: parseInt(e.target.value) || 2 })} className="w-full p-2 rounded-lg border" /></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600">📰 الخبر الرئيسي</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">اختيار الخبر</label><select value={template2Config.mainNewsId} onChange={(e) => setTemplate2Config({ ...template2Config, mainNewsId: e.target.value })} className="w-full p-2 rounded-lg border"><option value="">-- اختر خبراً --</option>{allNewsOptions.map(news => (<option key={news.id} value={news.id}>{news.title.substring(0, 50)}</option>))}</select></div><div><label className="block text-sm font-bold mb-1">ارتفاع الصورة</label><select value={template2Config.mainNewsImageHeight} onChange={(e) => setTemplate2Config({ ...template2Config, mainNewsImageHeight: e.target.value })} className="w-full p-2 rounded-lg border"><option value="h-64">متوسط</option><option value="h-80">كبير</option><option value="h-96">كبير جداً</option></select></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-green-600">📌 الخبرين الوسط</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">الخبر الأول</label><select value={template2Config.middleNewsIds[0] || ''} onChange={(e) => { const newIds = [...template2Config.middleNewsIds]; newIds[0] = e.target.value; setTemplate2Config({ ...template2Config, middleNewsIds: newIds }) }} className="w-full p-2 rounded-lg border"><option value="">-- اختر --</option>{allNewsOptions.filter(n => n.id !== template2Config.mainNewsId).map(news => (<option key={news.id} value={news.id}>{news.title.substring(0, 40)}</option>))}</select></div><div><label className="block text-sm font-bold mb-1">الخبر الثاني</label><select value={template2Config.middleNewsIds[1] || ''} onChange={(e) => { const newIds = [...template2Config.middleNewsIds]; newIds[1] = e.target.value; setTemplate2Config({ ...template2Config, middleNewsIds: newIds }) }} className="w-full p-2 rounded-lg border"><option value="">-- اختر --</option>{allNewsOptions.filter(n => n.id !== template2Config.mainNewsId && n.id !== template2Config.middleNewsIds[0]).map(news => (<option key={news.id} value={news.id}>{news.title.substring(0, 40)}</option>))}</select></div></div></div>
             </div>
-            <div className="border rounded-lg p-4 mt-6"><h3 className="font-bold text-lg mb-4 text-purple-600 border-b pb-2">📊 تحليلات سياسية (العمود الأيمن)</h3><div className="space-y-3"><div className="flex items-center gap-2"><input type="checkbox" id="politicalAnalysisEnabled" checked={template2Config.politicalAnalysisEnabled} onChange={(e) => setTemplate2Config({ ...template2Config, politicalAnalysisEnabled: e.target.checked })} className="w-4 h-4" /><label htmlFor="politicalAnalysisEnabled">تفعيل قسم تحليلات سياسية</label></div><div><label className="block text-sm font-bold mb-1">عنوان القسم</label><input type="text" value={template2Config.politicalAnalysisTitle} onChange={(e) => setTemplate2Config({ ...template2Config, politicalAnalysisTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><p className="text-sm text-gray-500">ملاحظة: محتوى التحليلات السياسية يتم إدارته من تبويب "النصوص القابلة للتعديل" (مفتاح politicalAnalysisText)</p></div></div>
-            <div className="mt-6 flex justify-center"><button onClick={saveTemplate2Config} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ جميع إعدادات القالب الثاني</button></div>
+            <div className="border rounded-lg p-4 mt-6"><h3 className="font-bold text-lg mb-4 text-purple-600">📊 تحليلات سياسية</h3><div className="space-y-3"><div className="flex items-center gap-2"><input type="checkbox" checked={template2Config.politicalAnalysisEnabled} onChange={(e) => setTemplate2Config({ ...template2Config, politicalAnalysisEnabled: e.target.checked })} className="w-4 h-4" /><label>تفعيل القسم</label></div><div><label className="block text-sm font-bold mb-1">العنوان</label><input type="text" value={template2Config.politicalAnalysisTitle} onChange={(e) => setTemplate2Config({ ...template2Config, politicalAnalysisTitle: e.target.value })} className="w-full p-2 rounded-lg border" /></div><p className="text-sm text-gray-500">المحتوى يتم إدارته من تبويب "النصوص القابلة للتعديل" (politicalAnalysisText)</p></div></div>
+            <div className="mt-6 flex justify-center"><button onClick={saveTemplate2Config} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ إعدادات القالب الثاني</button></div>
           </div>
         )}
 
@@ -1740,29 +1729,30 @@ export default function OwnerPage() {
         ============================================================ */}
         {activeTab === 'template3' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><FaTh className="text-red-600" /> 🎨 تخصيص القالب الثالث</h2>
+            <h2 className="text-2xl font-bold mb-6">🎨 تخصيص القالب الثالث</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600 border-b pb-2">📰 أخبار القالب الثالث</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">عدد الأخبار</label><input type="number" min="2" max="8" value={template3Config.regularNewsCount} onChange={(e) => setTemplate3Config({ ...template3Config, regularNewsCount: parseInt(e.target.value) || 4 })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">ارتفاع الصورة</label><select value={template3Config.regularNewsImageHeight} onChange={(e) => setTemplate3Config({ ...template3Config, regularNewsImageHeight: e.target.value })} className="w-full p-2 rounded-lg border"><option value="h-40">صغير</option><option value="h-48">متوسط</option><option value="h-56">كبير</option></select></div><div><label className="block text-sm font-bold mb-1">حجم العنوان</label><select value={template3Config.regularNewsTitleSize} onChange={(e) => setTemplate3Config({ ...template3Config, regularNewsTitleSize: e.target.value })} className="w-full p-2 rounded-lg border"><option value="text-base">عادي</option><option value="text-lg">كبير</option></select></div><div><label className="block text-sm font-bold mb-1">عدد أسطر الوصف</label><input type="number" min="1" max="4" value={template3Config.regularNewsDescriptionLines} onChange={(e) => setTemplate3Config({ ...template3Config, regularNewsDescriptionLines: parseInt(e.target.value) || 2 })} className="w-full p-2 rounded-lg border" /></div></div></div>
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-blue-600 border-b pb-2">💰 الأسعار العالمية</h3><p className="text-sm text-gray-500 mb-3">الأسعار العالمية يتم إدارتها من تبويب "الأسعار العالمية"</p><div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg"><p className="text-sm">📌 يمكنك:</p><ul className="text-xs text-gray-500 list-disc list-inside mt-2 space-y-1"><li>إضافة عملات وأسعار جديدة</li><li>تعديل قيم الأسعار الحالية</li><li>ترتيب ظهور العملات</li><li>تفعيل/تعطيل أي سعر</li></ul></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600">📰 أخبار القالب الثالث</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">عدد الأخبار</label><input type="number" min="2" max="8" value={template3Config.regularNewsCount} onChange={(e) => setTemplate3Config({ ...template3Config, regularNewsCount: parseInt(e.target.value) || 4 })} className="w-full p-2 rounded-lg border" /></div><div><label className="block text-sm font-bold mb-1">ارتفاع الصورة</label><select value={template3Config.regularNewsImageHeight} onChange={(e) => setTemplate3Config({ ...template3Config, regularNewsImageHeight: e.target.value })} className="w-full p-2 rounded-lg border"><option value="h-40">صغير</option><option value="h-48">متوسط</option><option value="h-56">كبير</option></select></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-blue-600">💰 الأسعار العالمية</h3><p className="text-sm text-gray-500">الأسعار العالمية يتم إدارتها من تبويب "الأسعار العالمية"</p></div>
             </div>
-            <div className="mt-6 flex justify-center"><button onClick={saveTemplate3Config} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ جميع إعدادات القالب الثالث</button></div>
+            <div className="mt-6 flex justify-center"><button onClick={saveTemplate3Config} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ إعدادات القالب الثالث</button></div>
           </div>
         )}
 
         {/* ============================================================
-            تبويب تخصيص الشريط المتحرك
+            تبويب تخصيص الشريط المتحرك (ماركيز)
         ============================================================ */}
         {activeTab === 'marquee' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><FaImages className="text-red-600" /> 🎨 تخصيص الشريط المتحرك (ماركيز)</h2>
+            <h2 className="text-2xl font-bold mb-6">🎨 تخصيص الشريط المتحرك (ماركيز)</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600 border-b pb-2">📰 الأخبار في الشريط</h3><div className="space-y-3"><div><label className="block text-sm font-bold mb-1">عدد الأخبار المعروضة</label><input type="number" min="3" max="20" value={marqueeConfig.displayCount} onChange={(e) => setMarqueeConfig({ ...marqueeConfig, displayCount: parseInt(e.target.value) || 10 })} className="w-full p-2 rounded-lg border" /></div></div></div>
-              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-green-600 border-b pb-2">⚙️ إعدادات الحركة</h3><div className="space-y-3"><div className="flex items-center gap-2"><input type="checkbox" id="autoScroll" checked={marqueeConfig.autoScroll} onChange={(e) => setMarqueeConfig({ ...marqueeConfig, autoScroll: e.target.checked })} className="w-4 h-4" /><label htmlFor="autoScroll">تفعيل الحركة التلقائية</label></div><div><label className="block text-sm font-bold mb-1">سرعة الحركة (بكسل لكل إطار)</label><input type="number" min="1" max="60" value={marqueeConfig.scrollSpeed} onChange={(e) => setMarqueeConfig({ ...marqueeConfig, scrollSpeed: parseInt(e.target.value) || 30 })} className="w-full p-2 rounded-lg border" /><p className="text-xs text-gray-500 mt-1">كلما زاد الرقم، زادت السرعة</p></div></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-red-600">📰 الأخبار في الشريط</h3><div><label className="block text-sm font-bold mb-1">عدد الأخبار المعروضة</label><input type="number" min="3" max="20" value={marqueeConfig.displayCount} onChange={(e) => setMarqueeConfig({ ...marqueeConfig, displayCount: parseInt(e.target.value) || 10 })} className="w-full p-2 rounded-lg border" /></div></div>
+              <div className="border rounded-lg p-4"><h3 className="font-bold text-lg mb-4 text-green-600">⚙️ إعدادات الحركة</h3><div className="flex items-center gap-2 mb-3"><input type="checkbox" checked={marqueeConfig.autoScroll} onChange={(e) => setMarqueeConfig({ ...marqueeConfig, autoScroll: e.target.checked })} className="w-4 h-4" /><label>تفعيل الحركة التلقائية</label></div><div><label className="block text-sm font-bold mb-1">سرعة الحركة</label><input type="number" min="1" max="60" value={marqueeConfig.scrollSpeed} onChange={(e) => setMarqueeConfig({ ...marqueeConfig, scrollSpeed: parseInt(e.target.value) || 30 })} className="w-full p-2 rounded-lg border" /></div></div>
             </div>
-            <div className="mt-6 flex justify-center"><button onClick={saveMarqueeConfig} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ إعدادات الشريط المتحرك</button></div>
+            <div className="mt-6 flex justify-center"><button onClick={saveMarqueeConfig} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ إعدادات الشريط</button></div>
           </div>
         )}
       </div>
     </div>
   )
 }
+```
