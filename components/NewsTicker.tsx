@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { getTickerItems } from '../lib/siteConfig'
 import { FaNewspaper, FaCircle } from 'react-icons/fa'
+import '../lib/i18n'
 
 interface TickerItem {
   id: number
@@ -57,7 +58,7 @@ export default function NewsTicker() {
     return null
   }
 
-  // بناء النص المتكرر من العناصر الموجودة في قاعدة البيانات
+  // بناء النص المتكرر من العناصر الموجودة في قاعدة البيانات (بنفس تنسيق القديم)
   const repeatedText = items
     .map(item => {
       if (item.link_url) {
