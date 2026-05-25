@@ -24,8 +24,7 @@ export default function NewsTicker() {
   const [loading, setLoading] = useState(true)
   const currentLocale = i18n.language
 
-  console.log('Current language:', currentLocale) // للتأكد من اللغة
-
+  // جلب البيانات من قاعدة البيانات
   const fetchTickerItems = async () => {
     try {
       const { data, error } = await supabase
@@ -35,7 +34,6 @@ export default function NewsTicker() {
         .order('order_index', { ascending: true })
       
       if (error) throw error
-      console.log('Fetched items:', data) // للتأكد من البيانات
       setItems(data || [])
     } catch (error) {
       console.error('Error fetching ticker items:', error)
@@ -48,10 +46,10 @@ export default function NewsTicker() {
   useEffect(() => {
     fetchTickerItems()
 
+    // تحديث فوري عند إضافة عناصر جديدة
     const channel = supabase
       .channel('ticker-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ticker_items' }, () => {
-        console.log('Ticker changed, refetching...')
         fetchTickerItems()
       })
       .subscribe()
@@ -60,6 +58,20 @@ export default function NewsTicker() {
       supabase.removeChannel(channel)
     }
   }, [])
+
+  // اختيار النص حسب اللغة الحالية
+  const getTextByLanguage = (item: TickerItem) => {
+    switch (currentLocale) {
+      case 'ar':
+        return item.text_content_ar
+      case 'en':
+        return item.text_content_en
+      case 'ku':
+        return item.text_content_ku
+      default:
+        return item.text_content_ar
+    }
+  }
 
   if (loading) {
     return (
@@ -73,17 +85,18 @@ export default function NewsTicker() {
     return null
   }
 
-  // اختيار النص حسب اللغة الحالية
-  const getTextByLanguage = (item: TickerItem) => {
-    if (currentLocale === 'ar') return item.text_content_ar
-    if (currentLocale === 'en') return item.text_content_en
-    if (currentLocale === 'ku') return item.text_content_ku
-    return item.text_content_ar
-  }
+  // بناء النص المتكرر للحركة المستمرة
+  const repeatedText = items
+    .map(item => {
+      const text = getTextByLanguage(item)
+      if (item.link_url) {
+        return `🔥 ${text} ➜ ${item.link_text || t('readMore')} | `
+      }
+      return `🔥 ${text} | `
+    })
+    .join(' ')
+    .repeat(5)
 
-  // بناء النص المتكرر
-  const displayItems = [...items, ...items, ...items]
-  
   return (
     <div className="bg-gray-900/95 border-y border-red-800/30 shadow-lg overflow-hidden">
       <div className="relative">
@@ -103,39 +116,16 @@ export default function NewsTicker() {
 
         {/* النص المتحرك */}
         <div className="overflow-hidden mr-36">
-          <div className="whitespace-nowrap animate-marquee inline-block py-3">
-            {displayItems.map((item, idx) => (
-              <span key={`${item.id}-${idx}`} className="inline-block mx-4">
-                {item.link_url ? (
-                  <a
-                    href={item.link_url}
-                    target={item.is_external ? '_blank' : '_self'}
-                    rel={item.is_external ? 'noopener noreferrer' : ''}
-                    className="text-gray-300 hover:text-white transition text-sm"
-                  >
-                    🔥 {getTextByLanguage(item)} ➜ {item.link_text || t('readMore')}
-                  </a>
-                ) : (
-                  <span className="text-gray-300 text-sm">
-                    🔥 {getTextByLanguage(item)}
-                  </span>
-                )}
-                <span className="text-red-600 mx-2">✦</span>
-              </span>
-            ))}
-          </div>
+          <marquee
+            behavior="scroll"
+            direction="left"
+            scrollamount="4"
+            className="text-gray-300 text-sm py-3"
+          >
+            {repeatedText}
+          </marquee>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
-        }
-      `}</style>
     </div>
   )
 }
