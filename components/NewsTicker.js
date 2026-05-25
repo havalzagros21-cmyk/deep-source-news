@@ -21,17 +21,27 @@ export default function NewsTicker() {
   const { t, i18n } = useTranslation()
   const [items, setItems] = useState<TickerItem[]>([])
   const [isHovered, setIsHovered] = useState(false)
+  const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const currentLocale = i18n.language
 
   const fetchTickerItems = async () => {
-    const { data } = await supabase
-      .from('ticker_items')
-      .select('*')
-      .eq('is_active', true)
-      .order('order_index', { ascending: true })
-    setItems(data || [])
+    try {
+      const { data, error } = await supabase
+        .from('ticker_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true })
+      
+      if (error) throw error
+      setItems(data || [])
+    } catch (error) {
+      console.error('Error fetching ticker:', error)
+      setItems([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -49,15 +59,29 @@ export default function NewsTicker() {
     }
   }, [])
 
-  // تحديث عند تغيير اللغة
   useEffect(() => {
-    fetchTickerItems()
+    if (items.length > 0) {
+      fetchTickerItems()
+    }
   }, [currentLocale])
 
   const getText = (item: TickerItem) => {
     if (currentLocale === 'ar') return item.text_content_ar
     if (currentLocale === 'en') return item.text_content_en
     return item.text_content_ku
+  }
+
+  // لا تعرض الشريط إذا كان تحميل أو لا توجد بيانات
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-r from-red-900 to-red-800 py-3">
+        <div className="text-center text-white/50 text-sm">جاري التحميل...</div>
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return null
   }
 
   const duplicateItems = [...items, ...items, ...items, ...items]
@@ -88,8 +112,6 @@ export default function NewsTicker() {
       if (animationId) cancelAnimationFrame(animationId)
     }
   }, [isHovered, items.length])
-
-  if (items.length === 0) return null
 
   return (
     <div
