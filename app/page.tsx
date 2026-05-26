@@ -38,7 +38,7 @@ function PriceItem({ nameKey, code, value, unit, trend, icon }: any) {
     <div className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-800/50 last:border-0">
       <div className="flex items-center gap-1.5">
         {icon && <span className="text-[10px]">{icon}</span>}
-        <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{t(nameKey)}</span>
+        <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{nameKey}</span>
         <span className="text-[9px] text-gray-400">({code})</span>
       </div>
       <div className="flex items-center gap-1">
@@ -131,15 +131,23 @@ async function getSliderNews() {
   return data || []
 }
 
+// ========== تعديل: دالة جلب الأسعار العالمية - ترجع مصفوفة كاملة ==========
 async function getExchangeRates() {
-  const { data, error } = await supabase.from('exchange_rates_config').select('*').order('order_index', { ascending: true })
+  const { data, error } = await supabase
+    .from('exchange_rates_config')
+    .select('*')
+    .eq('is_active', true)
+    .order('order_index', { ascending: true })
+    
   if (error || !data || data.length === 0) {
-    return { usd: 3.75, eur: 4.05, gbp: 4.75, sar: 3.75, kwd: 12.25, gold: 2350, oil: 85.20 }
+    console.log('لا توجد أسعار، جاري استخدام بيانات فارغة')
+    return []
   }
-  const rates: any = {}
-  data.forEach((item: any) => { rates[item.code.toLowerCase()] = item.value })
-  return rates
+  
+  console.log('تم جلب الأسعار بنجاح:', data.length, 'عنصر')
+  return data
 }
+// ============================================================
 
 async function getDailyBrief() {
   const { data } = await supabase.from('daily_brief').select('*').order('order_index', { ascending: true })
@@ -152,7 +160,7 @@ async function getDailyBrief() {
 export default function Home() {
   const { t, i18n } = useTranslation()
   const [hero, setHero] = useState<any>(null)
-  const [exchangeRates, setExchangeRates] = useState<any>({})
+  const [exchangeRates, setExchangeRates] = useState<any[]>([])  // تغيير إلى مصفوفة
   const [dailyBrief, setDailyBrief] = useState<any[]>([])
   const [translatedBrief, setTranslatedBrief] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -324,7 +332,6 @@ export default function Home() {
         return
       }
       if (currentLocale === 'ar') {
-        // للعربية: نستخدم الحقول العربية مباشرة
         const mappedBrief = dailyBrief.map((item: any) => ({
           ...item,
           section_title: item.section_title_ar,
@@ -333,7 +340,6 @@ export default function Home() {
         }))
         setTranslatedBrief(mappedBrief)
       } else if (currentLocale === 'en') {
-        // للإنجليزية: نستخدم الحقول الإنجليزية أو العربية كبديل
         const mappedBrief = dailyBrief.map((item: any) => ({
           ...item,
           section_title: item.section_title_en || item.section_title_ar,
@@ -342,7 +348,6 @@ export default function Home() {
         }))
         setTranslatedBrief(mappedBrief)
       } else if (currentLocale === 'ku') {
-        // للكردية: نستخدم الحقول الكردية أو العربية كبديل
         const mappedBrief = dailyBrief.map((item: any) => ({
           ...item,
           section_title: item.section_title_ku || item.section_title_ar,
@@ -351,7 +356,6 @@ export default function Home() {
         }))
         setTranslatedBrief(mappedBrief)
       } else {
-        // لأي لغة أخرى: نستخدم العربية
         const mappedBrief = dailyBrief.map((item: any) => ({
           ...item,
           section_title: item.section_title_ar,
@@ -381,7 +385,7 @@ export default function Home() {
         getDailyBrief(),
       ])
       
-      setExchangeRates(ratesData)
+      setExchangeRates(ratesData || [])
       setDailyBrief(briefData)
       
       const featuredNews = allNewsData.filter((n: any) => n.is_featured === true)
@@ -417,7 +421,6 @@ export default function Home() {
   useEffect(() => {
     fetchStatsFromDB()
     
-    // الاشتراك في تغييرات جدول الإحصائيات
     const statsChannel = supabase
       .channel('stats-realtime')
       .on(
@@ -467,8 +470,6 @@ export default function Home() {
     translatedData.largeNews.slice(6, 9),
   ]
 
-  const regularGroup1 = translatedData.regularNews.slice(0, 4)
-
   const NumberedListWithImage = ({ items, color = "text-red-600" }: any) => (
     <div className="space-y-2">
       {items.map((news: any, idx: number) => (
@@ -486,21 +487,6 @@ export default function Home() {
     </div>
   )
 
-  const RegularListWithImage = ({ items }: any) => (
-    <div className="space-y-2">
-      {items.map((news: any) => (
-        <a key={news.id} href={`/news/${encodeURIComponent(news.slug)}`} className="flex gap-2 group hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-lg transition">
-          {news.image && <img src={news.image} alt={news.title} className="w-10 h-10 object-cover rounded" />}
-          <div className="flex-1">
-            <h4 className="font-medium text-xs line-clamp-2 group-hover:text-red-600">{news.title}</h4>
-            <span className="text-gray-400 text-[10px]">{new Date(news.created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
-          </div>
-        </a>
-      ))}
-    </div>
-  )
-
-  // FreeTextBlock مع حد 1500 حرف
   const FreeTextBlock = ({ titleKey, icon, contentKey, color = "text-gray-700 dark:text-gray-300" }: any) => {
     const siteContent = siteTexts[contentKey]
     let content = ''
@@ -640,7 +626,6 @@ export default function Home() {
         <div className="container-custom">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* العمود الأيمن - تحليلات سياسية (نص حر - ممدد مكان أبراج الفلك) */}
             <div className="lg:col-span-4 order-2 lg:order-1">
               <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full">
                 <h3 className="text-blue-600 dark:text-blue-400 font-bold text-base mb-3 pb-2 border-b border-blue-200 dark:border-blue-800 flex items-center gap-2">
@@ -666,10 +651,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* العمود الأوسط - أخبار (خبر كبير + خبرين كبيرين) */}
             <div className="lg:col-span-8 order-1 lg:order-2">
               
-              {/* الخبر الكبير */}
               {mainNewsItem && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-xl transition-shadow mb-6">
                   <a href={`/news/${encodeURIComponent(mainNewsItem.slug)}`} className="block">
@@ -684,7 +667,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* خبرين كبيرين جنباً إلى جنب */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {translatedData.regularNews[4] && (
                   <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
@@ -719,7 +701,7 @@ export default function Home() {
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - 4 أخبار + أسعار عالمية */}
+      {/* القالب الثالث - 4 أخبار + أسعار عالمية (ديناميكية) */}
       {/* ======================================== */}
       <div className="container-custom py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -740,71 +722,134 @@ export default function Home() {
               ))}
             </div>
           </div>
+          
+          {/* ========== قسم الأسعار العالمية الديناميكي ========== */}
           <div className="lg:col-span-4 order-2 lg:order-2">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
               <div className="bg-gradient-to-r from-green-600 to-green-700 px-3 py-2">
-                <h3 className="text-white font-bold text-sm flex items-center gap-2"><FaGlobe size={12} /> {t('globalPrices')}</h3>
+                <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                  <FaGlobe size={12} /> {t('globalPrices')}
+                </h3>
               </div>
               <div className="p-2 max-h-[500px] overflow-y-auto">
-                <PriceSection titleKey="arabCurrencies" icon="🇸🇦" color="green">
-                  <PriceItem nameKey="sar" code="SAR" value={exchangeRates?.sar || '3.75'} unit="ر.س" trend="up" />
-                  <PriceItem nameKey="aed" code="AED" value={exchangeRates?.aed || '1.02'} unit="د.إ" trend="stable" />
-                  <PriceItem nameKey="kwd" code="KWD" value={exchangeRates?.kwd || '12.25'} unit="د.ك" trend="up" />
-                  <PriceItem nameKey="qar" code="QAR" value={exchangeRates?.qar || '1.03'} unit="ر.ق" trend="down" />
-                  <PriceItem nameKey="bhd" code="BHD" value={exchangeRates?.bhd || '9.95'} unit="د.ب" trend="up" />
-                  <PriceItem nameKey="omr" code="OMR" value={exchangeRates?.omr || '9.74'} unit="ر.ع" trend="stable" />
-                  <PriceItem nameKey="jod" code="JOD" value={exchangeRates?.jod || '5.29'} unit="د.ا" trend="up" />
-                  <PriceItem nameKey="sdg" code="SDG" value={exchangeRates?.sdg || '0.062'} unit="ج.س" trend="down" />
-                </PriceSection>
-                <PriceSection titleKey="foreignCurrencies" icon="🌍" color="blue">
-                  <PriceItem nameKey="usd" code="USD" value={exchangeRates?.usd || '3.75'} unit="ج.م" trend="up" icon={<FaDollarSign className="text-yellow-500" />} />
-                  <PriceItem nameKey="eur" code="EUR" value={exchangeRates?.eur || '4.05'} unit="ج.م" trend="down" icon={<FaEuroSign className="text-blue-500" />} />
-                  <PriceItem nameKey="gbp" code="GBP" value={exchangeRates?.gbp || '4.75'} unit="ج.م" trend="up" icon={<FaPoundSign className="text-purple-500" />} />
-                  <PriceItem nameKey="chf" code="CHF" value={exchangeRates?.chf || '4.20'} unit="ج.م" trend="down" />
-                  <PriceItem nameKey="cad" code="CAD" value={exchangeRates?.cad || '2.75'} unit="ج.م" trend="up" />
-                  <PriceItem nameKey="aud" code="AUD" value={exchangeRates?.aud || '2.45'} unit="ج.م" trend="down" />
-                  <PriceItem nameKey="jpy" code="JPY" value={exchangeRates?.jpy || '0.025'} unit="ج.م" trend="stable" icon={<FaYenSign className="text-red-500" />} />
-                  <PriceItem nameKey="cny" code="CNY" value={exchangeRates?.cny || '0.52'} unit="ج.م" trend="up" />
-                  <PriceItem nameKey="try" code="TRY" value={exchangeRates?.try || '0.11'} unit="ج.م" trend="down" />
-                  <PriceItem nameKey="rub" code="RUB" value={exchangeRates?.rub || '0.041'} unit="ج.م" trend="down" />
-                  <PriceItem nameKey="inr" code="INR" value={exchangeRates?.inr || '0.045'} unit="ج.م" trend="stable" />
-                  <PriceItem nameKey="brl" code="BRL" value={exchangeRates?.brl || '0.68'} unit="ج.م" trend="up" />
-                </PriceSection>
-                <PriceSection titleKey="cryptoCurrencies" icon="💎" color="purple">
-                  <PriceItem nameKey="btc" code="BTC" value={exchangeRates?.btc || '65,234'} unit="$" trend="up" icon={<FaBitcoin className="text-orange-500" />} />
-                  <PriceItem nameKey="eth" code="ETH" value={exchangeRates?.eth || '3,456'} unit="$" trend="down" />
-                  <PriceItem nameKey="xrp" code="XRP" value={exchangeRates?.xrp || '0.62'} unit="$" trend="up" />
-                  <PriceItem nameKey="sol" code="SOL" value={exchangeRates?.sol || '145'} unit="$" trend="up" />
-                  <PriceItem nameKey="ada" code="ADA" value={exchangeRates?.ada || '0.45'} unit="$" trend="down" />
-                  <PriceItem nameKey="doge" code="DOGE" value={exchangeRates?.doge || '0.12'} unit="$" trend="up" />
-                </PriceSection>
-                <PriceSection titleKey="preciousMetals" icon="🏆" color="yellow">
-                  <PriceItem nameKey="gold" code="XAU" value={exchangeRates?.gold || '2,350'} unit="$" trend="up" icon={<FaTrophy className="text-yellow-600" />} />
-                  <PriceItem nameKey="silver" code="XAG" value={exchangeRates?.silver || '28.50'} unit="$" trend="down" />
-                  <PriceItem nameKey="platinum" code="XPT" value={exchangeRates?.platinum || '920'} unit="$" trend="up" />
-                  <PriceItem nameKey="copper" code="COP" value={exchangeRates?.copper || '4.15'} unit="$" trend="up" />
-                </PriceSection>
-                <PriceSection titleKey="energy" icon="⛽" color="gray">
-                  <PriceItem nameKey="oil" code="BRT" value={exchangeRates?.oil || '85.20'} unit="$" trend="down" icon={<FaOilCan className="text-gray-600" />} />
-                  <PriceItem nameKey="wti" code="WTI" value={exchangeRates?.wti || '80.50'} unit="$" trend="up" />
-                  <PriceItem nameKey="ng" code="NG" value={exchangeRates?.ng || '2.85'} unit="$" trend="down" />
-                </PriceSection>
-                <PriceSection titleKey="indices" icon="📈" color="red">
-                  <PriceItem nameKey="sp500" code="SPX" value={exchangeRates?.sp500 || '5,234'} unit="نقطة" trend="up" />
-                  <PriceItem nameKey="nasdaq" code="IXIC" value={exchangeRates?.nasdaq || '18,450'} unit="نقطة" trend="up" />
-                  <PriceItem nameKey="dowjones" code="DJI" value={exchangeRates?.dowjones || '39,870'} unit="نقطة" trend="down" />
-                </PriceSection>
+                
+                {/* العملات العربية */}
+                {exchangeRates.filter((rate: any) => rate.category === 'arab').length > 0 && (
+                  <PriceSection titleKey="arabCurrencies" icon="🇸🇦" color="green">
+                    {exchangeRates.filter((rate: any) => rate.category === 'arab').map((rate: any) => (
+                      <PriceItem 
+                        key={rate.id}
+                        nameKey={rate.name}
+                        code={rate.code}
+                        value={rate.value}
+                        unit={rate.unit}
+                        trend={rate.trend}
+                      />
+                    ))}
+                  </PriceSection>
+                )}
+                
+                {/* العملات الأجنبية */}
+                {exchangeRates.filter((rate: any) => rate.category === 'foreign').length > 0 && (
+                  <PriceSection titleKey="foreignCurrencies" icon="🌍" color="blue">
+                    {exchangeRates.filter((rate: any) => rate.category === 'foreign').map((rate: any) => (
+                      <PriceItem 
+                        key={rate.id}
+                        nameKey={rate.name}
+                        code={rate.code}
+                        value={rate.value}
+                        unit={rate.unit}
+                        trend={rate.trend}
+                      />
+                    ))}
+                  </PriceSection>
+                )}
+                
+                {/* العملات الرقمية */}
+                {exchangeRates.filter((rate: any) => rate.category === 'crypto').length > 0 && (
+                  <PriceSection titleKey="cryptoCurrencies" icon="💎" color="purple">
+                    {exchangeRates.filter((rate: any) => rate.category === 'crypto').map((rate: any) => (
+                      <PriceItem 
+                        key={rate.id}
+                        nameKey={rate.name}
+                        code={rate.code}
+                        value={rate.value}
+                        unit={rate.unit}
+                        trend={rate.trend}
+                      />
+                    ))}
+                  </PriceSection>
+                )}
+                
+                {/* المعادن */}
+                {exchangeRates.filter((rate: any) => rate.category === 'metal').length > 0 && (
+                  <PriceSection titleKey="preciousMetals" icon="🏆" color="yellow">
+                    {exchangeRates.filter((rate: any) => rate.category === 'metal').map((rate: any) => (
+                      <PriceItem 
+                        key={rate.id}
+                        nameKey={rate.name}
+                        code={rate.code}
+                        value={rate.value}
+                        unit={rate.unit}
+                        trend={rate.trend}
+                      />
+                    ))}
+                  </PriceSection>
+                )}
+                
+                {/* الطاقة */}
+                {exchangeRates.filter((rate: any) => rate.category === 'energy').length > 0 && (
+                  <PriceSection titleKey="energy" icon="⛽" color="gray">
+                    {exchangeRates.filter((rate: any) => rate.category === 'energy').map((rate: any) => (
+                      <PriceItem 
+                        key={rate.id}
+                        nameKey={rate.name}
+                        code={rate.code}
+                        value={rate.value}
+                        unit={rate.unit}
+                        trend={rate.trend}
+                      />
+                    ))}
+                  </PriceSection>
+                )}
+                
+                {/* المؤشرات */}
+                {exchangeRates.filter((rate: any) => rate.category === 'index').length > 0 && (
+                  <PriceSection titleKey="indices" icon="📈" color="red">
+                    {exchangeRates.filter((rate: any) => rate.category === 'index').map((rate: any) => (
+                      <PriceItem 
+                        key={rate.id}
+                        nameKey={rate.name}
+                        code={rate.code}
+                        value={rate.value}
+                        unit={rate.unit}
+                        trend={rate.trend}
+                      />
+                    ))}
+                  </PriceSection>
+                )}
+                
+                {/* إذا لم توجد أي أسعار */}
+                {exchangeRates.length === 0 && (
+                  <div className="text-center py-4 text-gray-500 text-xs">
+                    لا توجد أسعار متاحة حالياً
+                  </div>
+                )}
+                
                 <div className="mt-3 pt-2 text-center border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-[9px] text-gray-400">{t('lastUpdate')}: {new Date().toLocaleTimeString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</p>
+                  <p className="text-[9px] text-gray-400">
+                    {t('lastUpdate')}: {new Date().toLocaleTimeString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
+          {/* ================================================== */}
         </div>
       </div>
 
       {/* ======================================== */}
-      {/* الجريدة اليومية والإحصائيات (مع تحديث فوري للإحصائيات) */}
+      {/* الجريدة اليومية والإحصائيات */}
       {/* ======================================== */}
       <div className="bg-gray-900 text-white mt-6">
         <div className="container-custom py-6">
