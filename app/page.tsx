@@ -68,6 +68,36 @@ function PriceSection({ titleKey, icon, children, color = "blue" }: any) {
 }
 
 // ============================================================
+// مكون الفيديو الجديد (تمت الإضافة فقط)
+// ============================================================
+function NewsVideo({ videoUrl, title }: { videoUrl?: string, title: string }) {
+  if (!videoUrl) return null;
+  
+  let embedUrl = videoUrl;
+  if (videoUrl.includes('youtube.com/watch?v=')) {
+    const videoId = videoUrl.split('v=')[1]?.split('&')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  } else if (videoUrl.includes('youtu.be/')) {
+    const videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  }
+  
+  return (
+    <div className="relative w-full bg-black rounded-t-lg overflow-hidden" style={{ height: '200px' }}>
+      <iframe
+        src={embedUrl}
+        title={title}
+        className="w-full h-full"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  );
+}
+// ============================================================
+
+// ============================================================
 // دوال جلب البيانات
 // ============================================================
 async function getHeroSection() {
@@ -127,11 +157,15 @@ async function getExtraNews() {
 }
 
 async function getSliderNews() {
-  const { data } = await supabase.from('news').select('id, title, description, image, slug, category').order('created_at', { ascending: false }).limit(5)
+  const { data } = await supabase
+    .from('news')
+    .select('id, title, description, image, slug, category')
+    .neq('category', 'zodiac')
+    .order('created_at', { ascending: false })
+    .limit(5)
   return data || []
 }
 
-// ========== تعديل: دالة جلب الأسعار العالمية - ترجع مصفوفة كاملة ==========
 async function getExchangeRates() {
   const { data, error } = await supabase
     .from('exchange_rates_config')
@@ -147,11 +181,34 @@ async function getExchangeRates() {
   console.log('تم جلب الأسعار بنجاح:', data.length, 'عنصر')
   return data
 }
-// ============================================================
 
 async function getDailyBrief() {
   const { data } = await supabase.from('daily_brief').select('*').order('order_index', { ascending: true })
   return data || []
+}
+
+async function getTemplate2Config() {
+  const { data, error } = await supabase
+    .from('template2_config')
+    .select('*')
+    .single()
+  
+  if (error || !data) {
+    return {
+      main_news_id: null,
+      middle_news_ids: [],
+      main_news_image_height: 'h-96',
+      main_news_title_size: 'text-3xl',
+      main_news_description_lines: 3,
+      middle_news_count: 2,
+      middle_news_image_height: 'h-56',
+      middle_news_title_size: 'text-xl',
+      middle_news_description_lines: 2,
+      political_analysis_enabled: true,
+      political_analysis_title: 'تحليلات سياسية',
+    }
+  }
+  return data
 }
 
 // ============================================================
@@ -160,7 +217,7 @@ async function getDailyBrief() {
 export default function Home() {
   const { t, i18n } = useTranslation()
   const [hero, setHero] = useState<any>(null)
-  const [exchangeRates, setExchangeRates] = useState<any[]>([])  // تغيير إلى مصفوفة
+  const [exchangeRates, setExchangeRates] = useState<any[]>([])
   const [dailyBrief, setDailyBrief] = useState<any[]>([])
   const [translatedBrief, setTranslatedBrief] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -170,7 +227,6 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(true)
   const animationRef = useRef<NodeJS.Timeout | null>(null)
   
-  // إحصائيات الموقع (سيتم تحديثها فورياً عبر Realtime)
   const [stats, setStats] = useState([
     { icon: FaGlobe, value: '120+', labelKey: 'countries' },
     { icon: FaUsers, value: '50K+', labelKey: 'readers' },
@@ -188,6 +244,9 @@ export default function Home() {
     regularNews: [] as any[],
     extraNews: [] as any[],
     sliderNews: [] as any[],
+    template2News: [] as any[],
+    template3News: [] as any[],
+    template2Config: null as any,
   })
   
   const [translatedData, setTranslatedData] = useState({
@@ -200,13 +259,13 @@ export default function Home() {
     regularNews: [] as any[],
     extraNews: [] as any[],
     sliderNews: [] as any[],
+    template2News: [] as any[],
+    template3News: [] as any[],
+    template2Config: null as any,
   })
 
   const currentLocale = i18n.language
 
-  // ============================================================
-  // دالة جلب الإحصائيات من قاعدة البيانات
-  // ============================================================
   const fetchStatsFromDB = useCallback(async () => {
     const { data } = await supabase.from('site_stats').select('*').order('order_index', { ascending: true })
     if (data && data.length > 0) {
@@ -223,7 +282,6 @@ export default function Home() {
     }
   }, [])
 
-  // حركة تلقائية للشريط
   useEffect(() => {
     if (isPlaying && marqueeRef.current) {
       const scrollMarqueeAuto = () => {
@@ -261,7 +319,6 @@ export default function Home() {
     setMounted(true)
   }, [])
 
-  // جلب النصوص القابلة للتعديل
   useEffect(() => {
     const fetchSiteTexts = async () => {
       const texts = await getAllSiteTexts()
@@ -297,9 +354,12 @@ export default function Home() {
         regularNews: rawData.regularNews,
         extraNews: rawData.extraNews,
         sliderNews: rawData.sliderNews,
+        template2News: rawData.template2News,
+        template3News: rawData.template3News,
+        template2Config: rawData.template2Config,
       })
     } else {
-      const [translatedHero, translatedBreaking, translatedSide, translatedSmall, translatedLarge, translatedRegular, translatedExtra, translatedSlider, translatedMain] = await Promise.all([
+      const [translatedHero, translatedBreaking, translatedSide, translatedSmall, translatedLarge, translatedRegular, translatedExtra, translatedSlider, translatedMain, translatedTemplate2, translatedTemplate3] = await Promise.all([
         translateHero(rawData.hero, locale),
         translateNewsList(rawData.breakingNews, locale),
         translateNewsList(rawData.sideNews, locale),
@@ -309,6 +369,8 @@ export default function Home() {
         translateNewsList(rawData.extraNews, locale),
         translateNewsList(rawData.sliderNews, locale),
         rawData.mainNews ? translateSingleNews(rawData.mainNews, locale) : Promise.resolve(null),
+        translateNewsList(rawData.template2News, locale),
+        translateNewsList(rawData.template3News, locale),
       ])
       setTranslatedData({
         hero: translatedHero,
@@ -320,11 +382,13 @@ export default function Home() {
         regularNews: translatedRegular,
         extraNews: translatedExtra,
         sliderNews: translatedSlider,
+        template2News: translatedTemplate2,
+        template3News: translatedTemplate3,
+        template2Config: rawData.template2Config,
       })
     }
   }, [rawData, translateHero])
 
-  // ترجمة الجريدة اليومية (معدل لدعم 3 لغات)
   useEffect(() => {
     const translateBrief = async () => {
       if (dailyBrief.length === 0) {
@@ -370,7 +434,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [allNewsData, heroData, breakingData, mainData, sideData, smallData, largeData, regularData, extraData, sliderData, ratesData, briefData] = await Promise.all([
+      const [allNewsData, heroData, breakingData, mainData, sideData, smallData, largeData, regularData, extraData, sliderData, ratesData, briefData, template2Config] = await Promise.all([
         getAllNewsByPosition(),
         getHeroSection(),
         getBreakingNews(),
@@ -383,6 +447,7 @@ export default function Home() {
         getSliderNews(),
         getExchangeRates(),
         getDailyBrief(),
+        getTemplate2Config(),
       ])
       
       setExchangeRates(ratesData || [])
@@ -392,14 +457,53 @@ export default function Home() {
       const sidePositionNews = allNewsData.filter((n: any) => n.position === 'side')
       const template1TopNews = allNewsData.filter((n: any) => n.position === 'template1_top')
       const template1BottomNews = allNewsData.filter((n: any) => n.position === 'template1_bottom')
-      const template2News = allNewsData.filter((n: any) => n.position === 'template2')
-      const template3News = allNewsData.filter((n: any) => n.position === 'template3')
-      const autoNews = allNewsData.filter((n: any) => !n.position || n.position === 'auto')
+      const template3NewsRaw = allNewsData.filter((n: any) => n.position === 'template3')
+      
+      let template2MainNews = null;
+      let template2MiddleNews: any[] = [];
+      
+      if (template2Config?.main_news_id) {
+        template2MainNews = allNewsData.find((n: any) => n.id === template2Config.main_news_id);
+      }
+      
+      if (template2Config?.middle_news_ids?.length > 0) {
+        template2MiddleNews = allNewsData.filter((n: any) => 
+          template2Config.middle_news_ids.includes(n.id)
+        );
+      }
+      
+      const template2NewsRaw = allNewsData.filter((n: any) => n.position === 'template2');
+      let finalTemplate2News: any[] = [];
+      
+      if (template2MainNews || template2MiddleNews.length > 0) {
+        finalTemplate2News = [template2MainNews, ...template2MiddleNews].filter(Boolean);
+      } else {
+        finalTemplate2News = template2NewsRaw.slice(0, 3);
+      }
+      
+      if (finalTemplate2News.length < 3 && finalTemplate2News.length > 0) {
+        const existingIds = finalTemplate2News.map((n: any) => n?.id).filter(Boolean);
+        const additionalNews = template2NewsRaw.filter((n: any) => !existingIds.includes(n.id)).slice(0, 3 - finalTemplate2News.length);
+        finalTemplate2News = [...finalTemplate2News, ...additionalNews];
+      }
+      
+      const autoNews = allNewsData.filter((n: any) => (!n.position || n.position === 'auto') && n.category !== 'zodiac')
       
       const finalSmallNews = template1TopNews.length > 0 ? template1TopNews : (autoNews.slice(0, 9))
       const finalLargeNews = template1BottomNews.length > 0 ? template1BottomNews : (autoNews.slice(9, 18))
-      const finalRegularNews = template2News.length > 0 ? template2News : (autoNews.slice(0, 12))
-      const finalExtraNews = template3News.length > 0 ? template3News : (autoNews.slice(12, 15))
+      
+      const finalTemplate3News = template3NewsRaw.filter((n: any) => n.category !== 'zodiac').slice(0, 4)
+      
+      const otherNews = allNewsData.filter((n: any) => 
+        n.position !== 'template2' && 
+        n.position !== 'template3' && 
+        n.position !== 'template1_top' && 
+        n.position !== 'template1_bottom' && 
+        n.position !== 'side' &&
+        n.category !== 'zodiac'
+      )
+      const finalRegularNews = otherNews.slice(0, 12)
+      const finalExtraNews = otherNews.slice(12, 15)
       
       setRawData({
         hero: heroData,
@@ -411,13 +515,15 @@ export default function Home() {
         regularNews: finalRegularNews.slice(0, 12),
         extraNews: finalExtraNews.slice(0, 3),
         sliderNews: sliderData,
+        template2News: finalTemplate2News,
+        template3News: finalTemplate3News,
+        template2Config: template2Config,
       })
       setLoading(false)
     }
     fetchData()
   }, [])
 
-  // جلب الإحصائيات أول مرة + الاشتراك في التغييرات الفورية (Realtime)
   useEffect(() => {
     fetchStatsFromDB()
     
@@ -456,7 +562,6 @@ export default function Home() {
   const heroData = translatedData.hero
   const breakingGroup = translatedData.breakingNews.slice(0, 4)
   const sideGroup = translatedData.sideNews.slice(0, 4)
-  const mainNewsItem = translatedData.mainNews
 
   const smallGroups = [
     translatedData.smallNews.slice(0, 3),
@@ -474,7 +579,13 @@ export default function Home() {
     <div className="space-y-2">
       {items.map((news: any, idx: number) => (
         <a key={news.id} href={`/news/${encodeURIComponent(news.slug)}`} className="flex gap-2 group hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-lg transition">
-          {news.image && <img src={news.image} alt={news.title} className="w-10 h-10 object-cover rounded" />}
+          {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+          {news.video_url ? (
+            <NewsVideo videoUrl={news.video_url} title={news.title} />
+          ) : (
+            news.image && <img src={news.image} alt={news.title} className="w-10 h-10 object-cover rounded" />
+          )}
+          {/* =========================================================== */}
           <div className="flex-1">
             <div className="flex items-center gap-1">
               <span className={`${color} font-bold text-xs min-w-[20px]`}>{idx + 1}.</span>
@@ -547,7 +658,13 @@ export default function Home() {
               {smallGroups[0].map((news) => (
                 <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                   <a href={`/news/${encodeURIComponent(news.slug)}`} className="flex gap-2">
-                    {news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />}
+                    {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                    {news.video_url ? (
+                      <NewsVideo videoUrl={news.video_url} title={news.title} />
+                    ) : (
+                      news.image && <img src={news.image} alt={news.title} className="w-14 h-14 object-cover rounded" />
+                    )}
+                    {/* =========================================================== */}
                     <div className="flex-1">
                       <span className="text-red-500 text-[10px] font-bold">{news.category || t('news')}</span>
                       <h4 className="font-bold text-xs line-clamp-2 mt-1 group-hover:text-red-600">{news.title}</h4>
@@ -561,7 +678,13 @@ export default function Home() {
               {largeGroups[0].map((news) => (
                 <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group">
                   <a href={`/news/${encodeURIComponent(news.slug)}`}>
-                    {news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />}
+                    {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                    {news.video_url ? (
+                      <NewsVideo videoUrl={news.video_url} title={news.title} />
+                    ) : (
+                      news.image && <img src={news.image} alt={news.title} className="w-full h-36 object-cover" />
+                    )}
+                    {/* =========================================================== */}
                     <div className="p-3">
                       <span className="text-red-500 text-[10px] font-bold">{news.category || t('news')}</span>
                       <h3 className="font-bold text-sm mt-1 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
@@ -598,7 +721,13 @@ export default function Home() {
             <div className="inline-flex gap-5 py-3 px-10">
               {[...translatedData.sliderNews, ...translatedData.sliderNews, ...translatedData.sliderNews].map((news, idx) => (
                 <a key={idx} href={`/news/${encodeURIComponent(news.slug)}`} className="inline-flex flex-col w-80 bg-white/30 dark:bg-black/30 backdrop-blur-md rounded-xl hover:bg-white/40 dark:hover:bg-black/40 transition-all duration-300 shadow-lg overflow-hidden border border-white/20 dark:border-white/10">
-                  {news.image && <img src={news.image} alt={news.title} className="w-full h-40 object-cover" />}
+                  {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                  {news.video_url ? (
+                    <NewsVideo videoUrl={news.video_url} title={news.title} />
+                  ) : (
+                    news.image && <img src={news.image} alt={news.title} className="w-full h-40 object-cover" />
+                  )}
+                  {/* =========================================================== */}
                   <div className="p-4">
                     <h4 className="text-gray-900 dark:text-white font-bold text-base line-clamp-2 mb-2">{news.title}</h4>
                     <p className="text-gray-700 dark:text-gray-300 text-xs line-clamp-2">{news.description || news.content?.substring(0, 80)}</p>
@@ -620,7 +749,7 @@ export default function Home() {
       `}</style>
 
       {/* ======================================== */}
-      {/* القالب الثاني - تحليلات سياسية ممددة + أخبار */}
+      {/* القالب الثاني - حسب إعدادات لوحة التحكم */}
       {/* ======================================== */}
       <div className="bg-gray-100 dark:bg-gray-900/30 py-6">
         <div className="container-custom">
@@ -629,7 +758,7 @@ export default function Home() {
             <div className="lg:col-span-4 order-2 lg:order-1">
               <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl h-full">
                 <h3 className="text-blue-600 dark:text-blue-400 font-bold text-base mb-3 pb-2 border-b border-blue-200 dark:border-blue-800 flex items-center gap-2">
-                  <FaChartBar size={14} /> {t('politicalAnalysis')}
+                  <FaChartBar size={14} /> {translatedData.template2Config?.political_analysis_title || t('politicalAnalysis')}
                 </h3>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
@@ -652,78 +781,141 @@ export default function Home() {
             </div>
 
             <div className="lg:col-span-8 order-1 lg:order-2">
-              
-              {mainNewsItem && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-xl transition-shadow mb-6">
-                  <a href={`/news/${encodeURIComponent(mainNewsItem.slug)}`} className="block">
-                    {mainNewsItem.image && <img src={mainNewsItem.image} alt={mainNewsItem.title} className="w-full h-80 object-cover" />}
-                    <div className="p-5">
-                      <span className="text-red-500 text-xs font-bold">{mainNewsItem.category || t('news')}</span>
-                      <h2 className="font-bold text-2xl mt-2 line-clamp-2 hover:text-red-600 transition">{mainNewsItem.title}</h2>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{mainNewsItem.description || mainNewsItem.content?.substring(0, 150)}...</p>
-                      <span className="text-gray-400 text-xs mt-2 block">{new Date(mainNewsItem.created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+              {(() => {
+                const template2Items = translatedData.template2News;
+                const mainItem = template2Items[0];
+                const sideItems = template2Items.slice(1, 3);
+                const config = translatedData.template2Config;
+                
+                if (template2Items.length === 0 || !mainItem) {
+                  return (
+                    <div className="text-center py-12 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                      <p className="text-gray-500 dark:text-gray-400">لا توجد أخبار في القالب الثاني حالياً</p>
+                      <p className="text-gray-400 text-xs mt-2">يمكنك إضافة أخبار للقالب الثاني من لوحة التحكم</p>
                     </div>
-                  </a>
-                </div>
-              )}
+                  );
+                }
+                
+                return (
+                  <>
+                    {/* الخبر الرئيسي */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-xl transition-shadow mb-6">
+                      <a href={`/news/${encodeURIComponent(mainItem.slug)}`} className="block">
+                        {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                        {mainItem.video_url ? (
+                          <NewsVideo videoUrl={mainItem.video_url} title={mainItem.title} />
+                        ) : (
+                          mainItem.image && <img src={mainItem.image} alt={mainItem.title} className={`w-full ${config?.main_news_image_height || 'h-96'} object-cover`} />
+                        )}
+                        {/* =========================================================== */}
+                        <div className="p-5">
+                          <span className="text-red-500 text-xs font-bold">{mainItem.category || t('news')}</span>
+                          <h2 className={`font-bold ${config?.main_news_title_size || 'text-3xl'} mt-2 line-clamp-2 hover:text-red-600 transition`}>{mainItem.title}</h2>
+                          <p className={`text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-${config?.main_news_description_lines || 3}`}>
+                            {mainItem.description || mainItem.content?.substring(0, 150)}...
+                          </p>
+                          <span className="text-gray-400 text-xs mt-2 block">{new Date(mainItem.created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+                        </div>
+                      </a>
+                    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {translatedData.regularNews[4] && (
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
-                    <a href={`/news/${encodeURIComponent(translatedData.regularNews[4].slug)}`} className="flex flex-col h-full">
-                      {translatedData.regularNews[4].image && <img src={translatedData.regularNews[4].image} alt={translatedData.regularNews[4].title} className="w-full h-56 object-cover" />}
-                      <div className="p-5 flex-1 flex flex-col">
-                        <span className="text-red-500 text-xs font-bold">{translatedData.regularNews[4].category || t('news')}</span>
-                        <h3 className="font-bold text-xl mt-2 line-clamp-2 group-hover:text-red-600">{translatedData.regularNews[4].title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3 flex-1">{translatedData.regularNews[4].description || translatedData.regularNews[4].content?.substring(0, 120)}...</p>
-                        <span className="text-gray-400 text-xs mt-3 block">{new Date(translatedData.regularNews[4].created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
-                      </div>
-                    </a>
-                  </div>
-                )}
-                {translatedData.regularNews[5] && (
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
-                    <a href={`/news/${encodeURIComponent(translatedData.regularNews[5].slug)}`} className="flex flex-col h-full">
-                      {translatedData.regularNews[5].image && <img src={translatedData.regularNews[5].image} alt={translatedData.regularNews[5].title} className="w-full h-56 object-cover" />}
-                      <div className="p-5 flex-1 flex flex-col">
-                        <span className="text-red-500 text-xs font-bold">{translatedData.regularNews[5].category || t('news')}</span>
-                        <h3 className="font-bold text-xl mt-2 line-clamp-2 group-hover:text-red-600">{translatedData.regularNews[5].title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3 flex-1">{translatedData.regularNews[5].description || translatedData.regularNews[5].content?.substring(0, 120)}...</p>
-                        <span className="text-gray-400 text-xs mt-3 block">{new Date(translatedData.regularNews[5].created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
-                      </div>
-                    </a>
-                  </div>
-                )}
-              </div>
+                    {/* الخبرين الوسط (جانبيين) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {sideItems[0] && (
+                        <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
+                          <a href={`/news/${encodeURIComponent(sideItems[0].slug)}`} className="flex flex-col h-full">
+                            {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                            {sideItems[0].video_url ? (
+                              <NewsVideo videoUrl={sideItems[0].video_url} title={sideItems[0].title} />
+                            ) : (
+                              sideItems[0].image && <img src={sideItems[0].image} alt={sideItems[0].title} className={`w-full ${config?.middle_news_image_height || 'h-56'} object-cover`} />
+                            )}
+                            {/* =========================================================== */}
+                            <div className="p-5 flex-1 flex flex-col">
+                              <span className="text-red-500 text-xs font-bold">{sideItems[0].category || t('news')}</span>
+                              <h3 className={`font-bold ${config?.middle_news_title_size || 'text-xl'} mt-2 line-clamp-2 group-hover:text-red-600`}>{sideItems[0].title}</h3>
+                              <p className={`text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-${config?.middle_news_description_lines || 2} flex-1`}>
+                                {sideItems[0].description || sideItems[0].content?.substring(0, 120)}...
+                              </p>
+                              <span className="text-gray-400 text-xs mt-3 block">{new Date(sideItems[0].created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+                            </div>
+                          </a>
+                        </div>
+                      )}
+                      {sideItems[1] && (
+                        <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
+                          <a href={`/news/${encodeURIComponent(sideItems[1].slug)}`} className="flex flex-col h-full">
+                            {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                            {sideItems[1].video_url ? (
+                              <NewsVideo videoUrl={sideItems[1].video_url} title={sideItems[1].title} />
+                            ) : (
+                              sideItems[1].image && <img src={sideItems[1].image} alt={sideItems[1].title} className={`w-full ${config?.middle_news_image_height || 'h-56'} object-cover`} />
+                            )}
+                            {/* =========================================================== */}
+                            <div className="p-5 flex-1 flex flex-col">
+                              <span className="text-red-500 text-xs font-bold">{sideItems[1].category || t('news')}</span>
+                              <h3 className={`font-bold ${config?.middle_news_title_size || 'text-xl'} mt-2 line-clamp-2 group-hover:text-red-600`}>{sideItems[1].title}</h3>
+                              <p className={`text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-${config?.middle_news_description_lines || 2} flex-1`}>
+                                {sideItems[1].description || sideItems[1].content?.substring(0, 120)}...
+                              </p>
+                              <span className="text-gray-400 text-xs mt-3 block">{new Date(sideItems[1].created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+                            </div>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
       </div>
 
       {/* ======================================== */}
-      {/* القالب الثالث - 4 أخبار + أسعار عالمية (ديناميكية) */}
+      {/* القالب الثالث - أخبار position='template3' فقط (بدون أبراج الفلك) */}
       {/* ======================================== */}
       <div className="container-custom py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
           <div className="lg:col-span-8 order-1 lg:order-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {translatedData.regularNews.slice(0, 4).map((news) => (
-                <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
-                  <a href={`/news/${encodeURIComponent(news.slug)}`} className="flex flex-col h-full">
-                    {news.image && <img src={news.image} alt={news.title} className="w-full h-48 object-cover" />}
-                    <div className="p-4 flex-1 flex flex-col">
-                      <span className="text-red-500 text-[11px] font-bold">{news.category || t('news')}</span>
-                      <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-2 flex-1">{news.description || news.content?.substring(0, 100)}...</p>
-                      <span className="text-gray-400 text-[11px] mt-3 block">{new Date(news.created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+              {(() => {
+                const template3Items = translatedData.template3News;
+                
+                if (template3Items.length === 0) {
+                  return (
+                    <div className="col-span-2 text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                      <p className="text-gray-500 dark:text-gray-400">لا توجد أخبار في القالب الثالث حالياً</p>
+                      <p className="text-gray-400 text-xs mt-2">يمكنك إضافة أخبار للقالب الثالث من لوحة التحكم</p>
                     </div>
-                  </a>
-                </div>
-              ))}
+                  );
+                }
+                
+                return template3Items.slice(0, 4).map((news) => (
+                  <div key={news.id} className="bg-white/50 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:bg-red-50 dark:hover:bg-red-950/30 transition group shadow-md flex flex-col h-full">
+                    <a href={`/news/${encodeURIComponent(news.slug)}`} className="flex flex-col h-full">
+                      {/* ========== تعديل: عرض الفيديو بدلاً من الصورة إذا كان موجوداً ========== */}
+                      {news.video_url ? (
+                        <NewsVideo videoUrl={news.video_url} title={news.title} />
+                      ) : (
+                        news.image && <img src={news.image} alt={news.title} className="w-full h-48 object-cover" />
+                      )}
+                      {/* =========================================================== */}
+                      <div className="p-4 flex-1 flex flex-col">
+                        <span className="text-red-500 text-[11px] font-bold">{news.category || t('news')}</span>
+                        <h3 className="font-bold text-lg mt-2 line-clamp-2 group-hover:text-red-600">{news.title}</h3>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-2 flex-1">{news.description || news.content?.substring(0, 100)}...</p>
+                        <span className="text-gray-400 text-[11px] mt-3 block">{new Date(news.created_at).toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+                      </div>
+                    </a>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
           
-          {/* ========== قسم الأسعار العالمية الديناميكي ========== */}
+          {/* الأسعار العالمية */}
           <div className="lg:col-span-4 order-2 lg:order-2">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
               <div className="bg-gradient-to-r from-green-600 to-green-700 px-3 py-2">
@@ -733,7 +925,6 @@ export default function Home() {
               </div>
               <div className="p-2 max-h-[500px] overflow-y-auto">
                 
-                {/* العملات العربية */}
                 {exchangeRates.filter((rate: any) => rate.category === 'arab').length > 0 && (
                   <PriceSection titleKey="arabCurrencies" icon="🇸🇦" color="green">
                     {exchangeRates.filter((rate: any) => rate.category === 'arab').map((rate: any) => (
@@ -749,7 +940,6 @@ export default function Home() {
                   </PriceSection>
                 )}
                 
-                {/* العملات الأجنبية */}
                 {exchangeRates.filter((rate: any) => rate.category === 'foreign').length > 0 && (
                   <PriceSection titleKey="foreignCurrencies" icon="🌍" color="blue">
                     {exchangeRates.filter((rate: any) => rate.category === 'foreign').map((rate: any) => (
@@ -765,7 +955,6 @@ export default function Home() {
                   </PriceSection>
                 )}
                 
-                {/* العملات الرقمية */}
                 {exchangeRates.filter((rate: any) => rate.category === 'crypto').length > 0 && (
                   <PriceSection titleKey="cryptoCurrencies" icon="💎" color="purple">
                     {exchangeRates.filter((rate: any) => rate.category === 'crypto').map((rate: any) => (
@@ -781,7 +970,6 @@ export default function Home() {
                   </PriceSection>
                 )}
                 
-                {/* المعادن */}
                 {exchangeRates.filter((rate: any) => rate.category === 'metal').length > 0 && (
                   <PriceSection titleKey="preciousMetals" icon="🏆" color="yellow">
                     {exchangeRates.filter((rate: any) => rate.category === 'metal').map((rate: any) => (
@@ -797,7 +985,6 @@ export default function Home() {
                   </PriceSection>
                 )}
                 
-                {/* الطاقة */}
                 {exchangeRates.filter((rate: any) => rate.category === 'energy').length > 0 && (
                   <PriceSection titleKey="energy" icon="⛽" color="gray">
                     {exchangeRates.filter((rate: any) => rate.category === 'energy').map((rate: any) => (
@@ -813,7 +1000,6 @@ export default function Home() {
                   </PriceSection>
                 )}
                 
-                {/* المؤشرات */}
                 {exchangeRates.filter((rate: any) => rate.category === 'index').length > 0 && (
                   <PriceSection titleKey="indices" icon="📈" color="red">
                     {exchangeRates.filter((rate: any) => rate.category === 'index').map((rate: any) => (
@@ -829,7 +1015,6 @@ export default function Home() {
                   </PriceSection>
                 )}
                 
-                {/* إذا لم توجد أي أسعار */}
                 {exchangeRates.length === 0 && (
                   <div className="text-center py-4 text-gray-500 text-xs">
                     لا توجد أسعار متاحة حالياً
@@ -844,7 +1029,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          {/* ================================================== */}
         </div>
       </div>
 

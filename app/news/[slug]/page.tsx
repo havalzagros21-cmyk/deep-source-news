@@ -9,6 +9,45 @@ import { FaCalendarAlt, FaEye } from 'react-icons/fa'
 import { notFound } from 'next/navigation'
 import '../../../lib/i18n'
 
+// ============================================================
+// مكون الفيديو (تمت الإضافة)
+// ============================================================
+function NewsVideo({ videoUrl, title, posterImage }: { videoUrl?: string, title: string, posterImage?: string }) {
+  if (!videoUrl) return null;
+  
+  let embedUrl = videoUrl;
+  if (videoUrl.includes('youtube.com/watch?v=')) {
+    const videoId = videoUrl.split('v=')[1]?.split('&')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  } else if (videoUrl.includes('youtu.be/')) {
+    const videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  }
+  
+  return (
+    <div className="relative w-full bg-black rounded-xl overflow-hidden mb-8" style={{ aspectRatio: '16/9' }}>
+      {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
+        <iframe
+          src={embedUrl}
+          title={title}
+          className="w-full h-full"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        <video 
+          src={videoUrl} 
+          className="w-full h-full object-cover" 
+          controls 
+          poster={posterImage || undefined}
+        />
+      )}
+    </div>
+  );
+}
+// ============================================================
+
 async function getNewsBySlug(slug: string) {
   const decodedSlug = decodeURIComponent(slug)
   
@@ -106,9 +145,13 @@ export default function NewsPage({ params }: { params: Promise<{ slug: string }>
         </div>
       </div>
 
-      {news.image && (
-        <img src={news.image} alt={translatedTitle} className="w-full h-auto max-h-[500px] object-cover rounded-xl mb-8" />
+      {/* ========== عرض الفيديو إذا كان موجوداً، وإلا عرض الصورة ========== */}
+      {news.video_url ? (
+        <NewsVideo videoUrl={news.video_url} title={translatedTitle} posterImage={news.image} />
+      ) : (
+        news.image && <img src={news.image} alt={translatedTitle} className="w-full h-auto max-h-[500px] object-cover rounded-xl mb-8" />
       )}
+      {/* ================================================================ */}
 
       <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
         {translatedContent}

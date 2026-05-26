@@ -28,6 +28,7 @@ interface NewsItem {
   content: string
   category: string
   image: string
+  video_url?: string
   created_at: string
   position?: string
   is_featured?: boolean
@@ -74,7 +75,6 @@ interface Comment {
 }
 
 // ========== جديد: الترجمة في الجريدة اليومية ==========
-// أضفنا 3 أعمدة للعنوان و 3 أعمدة للوصف بدلاً من حقل واحد
 interface DailyBriefItem {
   id: number
   section_title_ar: string
@@ -227,6 +227,8 @@ export default function OwnerPage() {
   const [newNewsPosition, setNewNewsPosition] = useState('auto')
   const [newNewsFeatured, setNewNewsFeatured] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
+  const [newNewsVideoUrl, setNewNewsVideoUrl] = useState('')
   
   // الإعدادات العامة
   const [settings, setSettings] = useState<Settings>({
@@ -262,7 +264,6 @@ export default function OwnerPage() {
   const [commentsLoading, setCommentsLoading] = useState(true)
   
   // ========== جديد: الترجمة في الجريدة اليومية ==========
-  // تم تحديث الحالات لتشمل 3 لغات لكل حقل
   const [dailyBrief, setDailyBrief] = useState<DailyBriefItem[]>([])
   const [showDailyBriefModal, setShowDailyBriefModal] = useState(false)
   const [newBriefSectionAr, setNewBriefSectionAr] = useState('')
@@ -275,7 +276,7 @@ export default function OwnerPage() {
   const [newBriefDescriptionEn, setNewBriefDescriptionEn] = useState('')
   const [newBriefDescriptionKu, setNewBriefDescriptionKu] = useState('')
   const [newBriefLink, setNewBriefLink] = useState('')
-  const [editingBrief, setEditingBrief] = useState<DailyBriefItem | null>(null) // وضع التعديل
+  const [editingBrief, setEditingBrief] = useState<DailyBriefItem | null>(null)
   // ======================================================
   
   // الأسعار العالمية
@@ -454,14 +455,11 @@ export default function OwnerPage() {
     setCommentsLoading(false)
   }
 
-  // ========== جديد: الترجمة في الجريدة اليومية ==========
-  // تحديث دالة الجلب لتستقبل الحقول الجديدة
   const fetchDailyBrief = async () => {
     const { data } = await supabase.from('daily_brief').select('*').order('order_index', { ascending: true })
     if (data) setDailyBrief(data as DailyBriefItem[])
   }
 
-  // تحديث دالة الإضافة لتشمل 3 لغات
   const handleAddBrief = async () => {
     if (!newBriefSectionAr || !newBriefTitleAr || !newBriefDescriptionAr) {
       setMessage('❌ الرجاء ملء الحقول المطلوبة بالعربية على الأقل')
@@ -486,7 +484,6 @@ export default function OwnerPage() {
     if (!error) {
       setMessage('✅ تم إضافة العنصر بنجاح')
       setShowDailyBriefModal(false)
-      // مسح جميع الحقول
       setNewBriefSectionAr(''); setNewBriefSectionEn(''); setNewBriefSectionKu('')
       setNewBriefTitleAr(''); setNewBriefTitleEn(''); setNewBriefTitleKu('')
       setNewBriefDescriptionAr(''); setNewBriefDescriptionEn(''); setNewBriefDescriptionKu('')
@@ -497,7 +494,6 @@ export default function OwnerPage() {
     }
   }
 
-  // دالة جديدة لتحديث عنصر موجود
   const handleUpdateBrief = async () => {
     if (!editingBrief) return
     
@@ -536,7 +532,6 @@ export default function OwnerPage() {
       setMessage('❌ خطأ في الحذف: ' + error.message)
     }
   }
-  // ======================================================
 
   const fetchExchangeRates = async () => {
     const { data } = await supabase.from('exchange_rates_config').select('*').order('order_index', { ascending: true })
@@ -1019,6 +1014,49 @@ export default function OwnerPage() {
     }
   }
 
+  // ========== دالة رفع الفيديو من الحاسوب ==========
+  const handleNewsVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    if (file.size > 50 * 1024 * 1024) {
+      setMessage('❌ حجم الفيديو كبير جداً. الحد الأقصى 50 ميجابايت')
+      return
+    }
+    
+    if (!file.type.startsWith('video/')) {
+      setMessage('❌ الرجاء اختيار ملف فيديو صالح (MP4, WebM, etc.)')
+      return
+    }
+    
+    setUploadingVideo(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `video-${Date.now()}.${fileExt}`
+      const filePath = `news-videos/${fileName}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('news-videos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type,
+        })
+      
+      if (uploadError) throw uploadError
+      
+      const { data: publicUrlData } = supabase.storage
+        .from('news-videos')
+        .getPublicUrl(filePath)
+      
+      setNewNewsVideoUrl(publicUrlData.publicUrl)
+      setMessage('✅ تم رفع الفيديو بنجاح')
+    } catch (error) {
+      setMessage('❌ خطأ في رفع الفيديو: ' + (error as Error).message)
+    }
+    setUploadingVideo(false)
+  }
+
   const handleAddRate = async () => {
     if (!newRateName || !newRateCode || !newRateValue) {
       setMessage('❌ الرجاء ملء جميع الحقول')
@@ -1250,6 +1288,7 @@ export default function OwnerPage() {
       content: newsItem.content,
       category: newsItem.category,
       image: newsItem.image,
+      video_url: newsItem.video_url,
       position: newsItem.position || 'auto',
       is_featured: newsItem.is_featured || false,
     }).eq('id', newsItem.id)
@@ -1278,6 +1317,7 @@ export default function OwnerPage() {
       content: newNewsContent,
       category: newNewsCategory || 'عام',
       image: newNewsImage || '',
+      video_url: newNewsVideoUrl || null,
       slug: slug,
       description: newNewsContent.substring(0, 200),
       created_at: new Date().toISOString(),
@@ -1291,6 +1331,7 @@ export default function OwnerPage() {
       setNewNewsContent('')
       setNewNewsCategory('')
       setNewNewsImage('')
+      setNewNewsVideoUrl('')
       setNewNewsSlug('')
       setNewNewsPosition('auto')
       setNewNewsFeatured(false)
@@ -1533,7 +1574,7 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب الأخبار
+            تبويب الأخبار - مع دعم الفيديو
         ============================================================ */}
         {activeTab === 'news' && (
           <div className="space-y-4">
@@ -1545,6 +1586,7 @@ export default function OwnerPage() {
                     <input type="text" value={editingNews.title} onChange={(e) => setEditingNews({ ...editingNews, title: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-gray-900" />
                     <textarea value={editingNews.content} onChange={(e) => setEditingNews({ ...editingNews, content: e.target.value })} rows={5} className="w-full p-2 rounded-lg border dark:bg-gray-900" />
                     <div><label className="block font-bold mb-1 text-sm">📍 مكان ظهور الخبر</label><select value={editingNews.position || 'auto'} onChange={(e) => setEditingNews({ ...editingNews, position: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-gray-900"><option value="auto">🔄 تلقائي (حسب التصنيف)</option><option value="featured">⭐ أخبار عاجلة</option><option value="side">📰 أخبار جانبية</option><option value="template1_top">📰 القالب الأول - أعلى</option><option value="template1_bottom">📰 القالب الأول - أسفل</option><option value="template2">📊 القالب الثاني</option><option value="template3">🌍 القالب الثالث</option><option value="category_only">📁 صفحة التصنيف فقط</option></select></div>
+                    <div><label className="block font-bold mb-1 text-sm">🎥 رابط الفيديو (اختياري)</label><input type="text" value={editingNews.video_url || ''} onChange={(e) => setEditingNews({ ...editingNews, video_url: e.target.value })} placeholder="رابط الفيديو (YouTube أو رابط مباشر)" className="w-full p-2 rounded-lg border dark:bg-gray-900" /></div>
                     <div className="flex items-center gap-3"><input type="checkbox" id="featuredCheck" checked={editingNews.is_featured || false} onChange={(e) => setEditingNews({ ...editingNews, is_featured: e.target.checked })} className="w-4 h-4" /><label htmlFor="featuredCheck" className="text-sm">تمييز كخبر عاجل</label></div>
                     <div className="flex gap-2"><button onClick={() => handleUpdate(editingNews)} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaSave /> حفظ</button><button onClick={() => setEditingNews(null)} className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><FaTimes /> إلغاء</button></div>
                   </div>
@@ -1567,9 +1609,29 @@ export default function OwnerPage() {
                     <div><label className="block font-bold mb-2">📍 مكان ظهور الخبر</label><select value={newNewsPosition} onChange={(e) => setNewNewsPosition(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800"><option value="auto">🔄 تلقائي (حسب التصنيف)</option><option value="featured">⭐ أخبار عاجلة</option><option value="side">📰 أخبار جانبية</option><option value="template1_top">📰 القالب الأول - أعلى</option><option value="template1_bottom">📰 القالب الأول - أسفل</option><option value="template2">📊 القالب الثاني</option><option value="template3">🌍 القالب الثالث</option><option value="category_only">📁 صفحة التصنيف فقط</option></select></div>
                     <div className="flex items-center gap-3"><input type="checkbox" id="featuredCheckAdd" checked={newNewsFeatured} onChange={(e) => setNewNewsFeatured(e.target.checked)} className="w-5 h-5" /><label htmlFor="featuredCheckAdd" className="font-bold">تمييز كخبر عاجل</label></div>
                     <div><label className="block font-bold mb-2">الصورة</label><div className="flex gap-3 flex-wrap"><button onClick={() => document.getElementById('newsImageInput')?.click()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2" disabled={uploadingImage}><FaUpload /> {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}</button><input id="newsImageInput" type="file" accept="image/*" className="hidden" onChange={handleNewsImageUpload} /><input type="text" value={newNewsImage} onChange={(e) => setNewNewsImage(e.target.value)} placeholder="أو أدخل رابط الصورة" className="flex-1 p-3 rounded-lg border dark:bg-gray-800" /></div>{newNewsImage && <img src={newNewsImage} alt="معاينة" className="mt-2 h-32 object-cover rounded" />}</div>
+                    <div><label className="block font-bold mb-2">🎥 فيديو (اختياري)</label>
+                      <div className="flex gap-3 flex-wrap">
+                        <button onClick={() => document.getElementById('newsVideoInput')?.click()} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2" disabled={uploadingVideo}>
+                          <FaUpload /> {uploadingVideo ? 'جاري الرفع...' : 'رفع فيديو من جهازك'}
+                        </button>
+                        <input id="newsVideoInput" type="file" accept="video/*" className="hidden" onChange={handleNewsVideoUpload} />
+                        <input type="text" value={newNewsVideoUrl} onChange={(e) => setNewNewsVideoUrl(e.target.value)} placeholder="أو أدخل رابط فيديو (YouTube أو رابط مباشر)" className="flex-1 p-3 rounded-lg border dark:bg-gray-800" />
+                      </div>
+                      {uploadingVideo && <p className="text-sm text-blue-500 mt-1">جاري رفع الفيديو...</p>}
+                      {newNewsVideoUrl && !uploadingVideo && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500">معاينة الفيديو:</p>
+                          {newNewsVideoUrl.includes('youtube.com') || newNewsVideoUrl.includes('youtu.be') ? (
+                            <iframe src={`https://www.youtube.com/embed/${newNewsVideoUrl.split('v=')[1]?.split('&')[0] || newNewsVideoUrl.split('youtu.be/')[1]?.split('?')[0]}`} className="w-full h-48 rounded mt-1" frameBorder="0" allowFullScreen />
+                          ) : (
+                            <video src={newNewsVideoUrl} className="w-full h-48 object-cover rounded mt-1" controls />
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div><label className="block font-bold mb-2">رابط مخصص (Slug) - اختياري</label><input type="text" value={newNewsSlug} onChange={(e) => setNewNewsSlug(e.target.value)} placeholder="مثال: my-news-title" className="w-full p-3 rounded-lg border dark:bg-gray-800" /></div>
                   </div>
-                  <div className="flex gap-3 mt-6"><button onClick={handleAddNews} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة الخبر</button><button onClick={() => { setShowAddNewsModal(false); setNewNewsTitle(''); setNewNewsContent(''); setNewNewsCategory(''); setNewNewsImage(''); setNewNewsSlug(''); setNewNewsPosition('auto'); setNewNewsFeatured(false); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
+                  <div className="flex gap-3 mt-6"><button onClick={handleAddNews} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة الخبر</button><button onClick={() => { setShowAddNewsModal(false); setNewNewsTitle(''); setNewNewsContent(''); setNewNewsCategory(''); setNewNewsImage(''); setNewNewsVideoUrl(''); setNewNewsSlug(''); setNewNewsPosition('auto'); setNewNewsFeatured(false); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
                 </div>
               </div>
             )}
@@ -1636,7 +1698,7 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب النصوص القابلة للتعديل (التحليلات الاقتصادية + رؤيتنا)
+            تبويب النصوص القابلة للتعديل
         ============================================================ */}
         {activeTab === 'sitetexts' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
@@ -1690,7 +1752,7 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب الشريط المتحرك (مع الترجمة)
+            تبويب الشريط المتحرك
         ============================================================ */}
         {activeTab === 'ticker' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800 space-y-6">
@@ -1747,7 +1809,7 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب الجريدة اليومية - مع دعم 3 لغات كامل
+            تبويب الجريدة اليومية
         ============================================================ */}
         {activeTab === 'dailybrief' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
@@ -1769,17 +1831,14 @@ export default function OwnerPage() {
                   <div key={item.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
-                        {/* عرض القسم بـ 3 لغات */}
                         <div className="flex flex-wrap gap-2 mb-2">
                           <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded text-xs">🇸🇦 {item.section_title_ar}</span>
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded text-xs">🇬🇧 {item.section_title_en}</span>
                           <span className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded text-xs">🏴 {item.section_title_ku}</span>
                         </div>
-                        {/* عرض العنوان بـ 3 لغات */}
                         <p className="font-bold text-gray-800 dark:text-gray-200">📌 {item.title_ar}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">📌 {item.title_en}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">📌 {item.title_ku}</p>
-                        {/* عرض الوصف بـ 3 لغات */}
                         <p className="text-xs text-gray-500 mt-2 line-clamp-2">{item.description_ar}</p>
                         <p className="text-xs text-gray-500 line-clamp-2">{item.description_en}</p>
                         <p className="text-xs text-gray-500 line-clamp-2">{item.description_ku}</p>
@@ -1804,14 +1863,12 @@ export default function OwnerPage() {
           </div>
         )}
 
-        {/* نافذة إضافة أو تعديل عنصر في الجريدة اليومية - دعم 3 لغات */}
         {showDailyBriefModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-3xl mx-4 my-8 max-h-[90vh] overflow-y-auto">
               <h3 className="text-xl font-bold mb-4">{editingBrief ? '✏️ تعديل عنصر الجريدة اليومية' : '➕ إضافة عنصر جديد للجريدة اليومية'}</h3>
               
               <div className="space-y-5">
-                {/* عنوان القسم - 3 لغات */}
                 <div className="border-b pb-3">
                   <h4 className="font-bold text-lg mb-3 text-gray-700 dark:text-gray-300">📂 عنوان القسم (Section Title)</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1830,7 +1887,6 @@ export default function OwnerPage() {
                   </div>
                 </div>
 
-                {/* العنوان - 3 لغات */}
                 <div className="border-b pb-3">
                   <h4 className="font-bold text-lg mb-3 text-gray-700 dark:text-gray-300">📌 العنوان (Title)</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1849,7 +1905,6 @@ export default function OwnerPage() {
                   </div>
                 </div>
 
-                {/* الوصف - 3 لغات */}
                 <div className="border-b pb-3">
                   <h4 className="font-bold text-lg mb-3 text-gray-700 dark:text-gray-300">📝 الوصف (Description)</h4>
                   <div className="grid grid-cols-1 gap-4">
@@ -1868,7 +1923,6 @@ export default function OwnerPage() {
                   </div>
                 </div>
 
-                {/* الرابط */}
                 <div>
                   <label className="block font-bold mb-2">🔗 الرابط (اختياري)</label>
                   <input type="text" value={editingBrief ? editingBrief.link_url : newBriefLink} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, link_url: e.target.value }) : setNewBriefLink(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" placeholder="/news/example أو https://..." />
@@ -2007,7 +2061,7 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب تخصيص الشريط المتحرك (ماركيز)
+            تبويب تخصيص الشريط المتحرك
         ============================================================ */}
         {activeTab === 'marquee' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
