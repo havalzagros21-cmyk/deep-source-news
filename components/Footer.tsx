@@ -9,7 +9,6 @@ export default function Footer() {
   const { t, i18n } = useTranslation()
   const [mounted, setMounted] = useState(false)
   const currentYear = new Date().getFullYear()
-  const currentLocale = i18n.language
 
   useEffect(() => {
     setMounted(true)
@@ -41,7 +40,7 @@ export default function Footer() {
     <footer className="bg-gray-900 text-white mt-0 pt-0">
       <div className="container-custom py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* About Section - اسم الموقع ثابت */}
+          {/* About Section */}
           <div>
             <h3 className="text-2xl font-bold mb-4">
               <span className="text-red-500">Deep</span>
@@ -57,9 +56,9 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-lg">{t('footerQuickLinks')}</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="/" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('home')}</a></li>
-              <li><a href="/admin" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('ownerPanel')}</a></li>
-              <li><a href="/owner" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('ownerPanel')}</a></li>
+              <li><a href="/category/politics" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('politics')}</a></li>
+              <li><a href="/category/zodiac" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('zodiac')}</a></li>
+              <li><a href="/category/misc" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('misc')}</a></li>
               <li><a href="/about" className="hover:text-red-500 transition-colors duration-200 hover:translate-x-1 inline-block">{t('about')}</a></li>
             </ul>
           </div>

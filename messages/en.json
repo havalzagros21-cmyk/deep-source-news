@@ -20,7 +20,7 @@
   "login": "Login",
   "email": "Email",
   "password": "Password",
-  "views": "views",
+  "views": "Views",
   "publishedAt": "Published at",
   "relatedNews": "Related News",
   "dailyBrief": "Daily Brief",
@@ -120,5 +120,8 @@
   "depth": "Depth",
   "depthText": "We provide in-depth analysis beyond headlines",
   "comprehensiveness": "Comprehensiveness",
-  "comprehensivenessText": "We cover various fields and regions"
+  "comprehensivenessText": "We cover various fields and regions",
+
+  "dailyBriefDescription": "Top events and daily analysis",
+  "dailyBriefFooter": "The newspaper is updated daily with the most important news and analysis"
 }

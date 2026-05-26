@@ -1,4 +1,5 @@
-﻿'use client'
+```tsx
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -14,8 +15,7 @@ import {
   FaFire, FaUserPlus, FaUserMinus, FaKey, FaExchangeAlt, FaListUl,
   FaRulerCombined, FaFont, FaBorderAll, FaSlidersH, FaMapMarkerAlt,
   FaLanguage, FaCheck, FaCheckDouble, FaLayerGroup, FaEyeDropper,
-  FaPhotoVideo, FaHeading, FaParagraph, FaImages, FaTh, FaThLarge,
-  FaShareAlt, FaFacebook, FaTwitter, FaInstagram, FaYoutube, FaLinkedin
+  FaPhotoVideo, FaHeading, FaParagraph, FaImages, FaTh, FaThLarge
 } from 'react-icons/fa'
 import { getAllTickerItems, addCustomTickerItem, deleteTickerItem, updateTickerOrder, toggleTickerItem, getAllSiteTexts, updateSiteText } from '../../lib/siteConfig'
 
@@ -73,24 +73,15 @@ interface Comment {
   created_at: string
 }
 
-// ========== جديد: الترجمة في الجريدة اليومية ==========
-// أضفنا 3 أعمدة للعنوان و 3 أعمدة للوصف بدلاً من حقل واحد
 interface DailyBriefItem {
   id: number
-  section_title_ar: string
-  section_title_en: string
-  section_title_ku: string
-  title_ar: string
-  title_en: string
-  title_ku: string
-  description_ar: string
-  description_en: string
-  description_ku: string
+  section_title: string
+  title: string
+  description: string
   link_url: string
   order_index: number
   is_active: boolean
 }
-// ======================================================
 
 interface ExchangeRate {
   id: number
@@ -136,15 +127,6 @@ interface SiteText {
   value_ar: string
   value_en: string
   value_ku: string
-}
-
-interface SocialLink {
-  id: number
-  platform: string
-  url: string
-  icon: string
-  order_index: number
-  is_active: boolean
 }
 
 interface Template1Config {
@@ -212,7 +194,7 @@ export default function OwnerPage() {
   const [loadingAuth, setLoadingAuth] = useState(true)
   
   // التبويب النشط
-  const [activeTab, setActiveTab] = useState<'home' | 'news' | 'settings' | 'ticker' | 'hero' | 'comments' | 'dailybrief' | 'exchange' | 'stats' | 'templates' | 'admins' | 'menu' | 'sitetexts' | 'template1' | 'template2' | 'template3' | 'marquee' | 'social'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'news' | 'settings' | 'ticker' | 'hero' | 'comments' | 'dailybrief' | 'exchange' | 'stats' | 'templates' | 'admins' | 'menu' | 'sitetexts' | 'template1' | 'template2' | 'template3' | 'marquee'>('home')
   
   // الأخبار
   const [news, setNews] = useState<NewsItem[]>([])
@@ -261,22 +243,13 @@ export default function OwnerPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentsLoading, setCommentsLoading] = useState(true)
   
-  // ========== جديد: الترجمة في الجريدة اليومية ==========
-  // تم تحديث الحالات لتشمل 3 لغات لكل حقل
+  // الجريدة اليومية
   const [dailyBrief, setDailyBrief] = useState<DailyBriefItem[]>([])
   const [showDailyBriefModal, setShowDailyBriefModal] = useState(false)
-  const [newBriefSectionAr, setNewBriefSectionAr] = useState('')
-  const [newBriefSectionEn, setNewBriefSectionEn] = useState('')
-  const [newBriefSectionKu, setNewBriefSectionKu] = useState('')
-  const [newBriefTitleAr, setNewBriefTitleAr] = useState('')
-  const [newBriefTitleEn, setNewBriefTitleEn] = useState('')
-  const [newBriefTitleKu, setNewBriefTitleKu] = useState('')
-  const [newBriefDescriptionAr, setNewBriefDescriptionAr] = useState('')
-  const [newBriefDescriptionEn, setNewBriefDescriptionEn] = useState('')
-  const [newBriefDescriptionKu, setNewBriefDescriptionKu] = useState('')
+  const [newBriefSection, setNewBriefSection] = useState('')
+  const [newBriefTitle, setNewBriefTitle] = useState('')
+  const [newBriefDescription, setNewBriefDescription] = useState('')
   const [newBriefLink, setNewBriefLink] = useState('')
-  const [editingBrief, setEditingBrief] = useState<DailyBriefItem | null>(null) // وضع التعديل
-  // ======================================================
   
   // الأسعار العالمية
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([])
@@ -377,12 +350,6 @@ export default function OwnerPage() {
     displayCount: 10,
   })
   
-  // روابط التواصل الاجتماعي
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
-  const [showSocialModal, setShowSocialModal] = useState(false)
-  const [newSocialPlatform, setNewSocialPlatform] = useState('')
-  const [newSocialUrl, setNewSocialUrl] = useState('')
-  
   const [message, setMessage] = useState('')
   const [uploading, setUploading] = useState(false)
 
@@ -454,89 +421,10 @@ export default function OwnerPage() {
     setCommentsLoading(false)
   }
 
-  // ========== جديد: الترجمة في الجريدة اليومية ==========
-  // تحديث دالة الجلب لتستقبل الحقول الجديدة
   const fetchDailyBrief = async () => {
     const { data } = await supabase.from('daily_brief').select('*').order('order_index', { ascending: true })
     if (data) setDailyBrief(data as DailyBriefItem[])
   }
-
-  // تحديث دالة الإضافة لتشمل 3 لغات
-  const handleAddBrief = async () => {
-    if (!newBriefSectionAr || !newBriefTitleAr || !newBriefDescriptionAr) {
-      setMessage('❌ الرجاء ملء الحقول المطلوبة بالعربية على الأقل')
-      return
-    }
-    
-    const { error } = await supabase.from('daily_brief').insert([{
-      section_title_ar: newBriefSectionAr,
-      section_title_en: newBriefSectionEn || newBriefSectionAr,
-      section_title_ku: newBriefSectionKu || newBriefSectionAr,
-      title_ar: newBriefTitleAr,
-      title_en: newBriefTitleEn || newBriefTitleAr,
-      title_ku: newBriefTitleKu || newBriefTitleAr,
-      description_ar: newBriefDescriptionAr,
-      description_en: newBriefDescriptionEn || newBriefDescriptionAr,
-      description_ku: newBriefDescriptionKu || newBriefDescriptionAr,
-      link_url: newBriefLink || '',
-      order_index: dailyBrief.length + 1,
-      is_active: true
-    }])
-    
-    if (!error) {
-      setMessage('✅ تم إضافة العنصر بنجاح')
-      setShowDailyBriefModal(false)
-      // مسح جميع الحقول
-      setNewBriefSectionAr(''); setNewBriefSectionEn(''); setNewBriefSectionKu('')
-      setNewBriefTitleAr(''); setNewBriefTitleEn(''); setNewBriefTitleKu('')
-      setNewBriefDescriptionAr(''); setNewBriefDescriptionEn(''); setNewBriefDescriptionKu('')
-      setNewBriefLink('')
-      fetchDailyBrief()
-    } else {
-      setMessage('❌ خطأ: ' + error.message)
-    }
-  }
-
-  // دالة جديدة لتحديث عنصر موجود
-  const handleUpdateBrief = async () => {
-    if (!editingBrief) return
-    
-    const { error } = await supabase
-      .from('daily_brief')
-      .update({
-        section_title_ar: editingBrief.section_title_ar,
-        section_title_en: editingBrief.section_title_en,
-        section_title_ku: editingBrief.section_title_ku,
-        title_ar: editingBrief.title_ar,
-        title_en: editingBrief.title_en,
-        title_ku: editingBrief.title_ku,
-        description_ar: editingBrief.description_ar,
-        description_en: editingBrief.description_en,
-        description_ku: editingBrief.description_ku,
-        link_url: editingBrief.link_url,
-      })
-      .eq('id', editingBrief.id)
-    
-    if (!error) {
-      setMessage('✅ تم تحديث العنصر بنجاح')
-      setEditingBrief(null)
-      fetchDailyBrief()
-    } else {
-      setMessage('❌ خطأ في التحديث: ' + error.message)
-    }
-  }
-
-  const handleDeleteBrief = async (id: number) => {
-    if (!confirm('هل تريد حذف هذا العنصر؟')) return
-    const { error } = await supabase.from('daily_brief').delete().eq('id', id)
-    if (!error) {
-      setMessage('✅ تم الحذف بنجاح')
-      fetchDailyBrief()
-    } else {
-      setMessage('❌ خطأ في الحذف: ' + error.message)
-    }
-  }
-  // ======================================================
 
   const fetchExchangeRates = async () => {
     const { data } = await supabase.from('exchange_rates_config').select('*').order('order_index', { ascending: true })
@@ -675,21 +563,6 @@ export default function OwnerPage() {
         scrollSpeed: data.scroll_speed || 30,
         displayCount: data.display_count || 10,
       })
-    }
-  }
-
-  const fetchSocialLinks = async () => {
-    const { data } = await supabase.from('social_links').select('*').order('order_index', { ascending: true })
-    if (data && data.length > 0) {
-      setSocialLinks(data)
-    } else {
-      const defaultLinks: SocialLink[] = [
-        { id: 1, platform: 'facebook', url: 'https://facebook.com/deepsourcenews', icon: 'FaFacebook', order_index: 1, is_active: true },
-        { id: 2, platform: 'twitter', url: 'https://twitter.com/deepsourcenews', icon: 'FaTwitter', order_index: 2, is_active: true },
-        { id: 3, platform: 'instagram', url: 'https://instagram.com/deepsourcenews', icon: 'FaInstagram', order_index: 3, is_active: true },
-        { id: 4, platform: 'youtube', url: 'https://youtube.com/deepsourcenews', icon: 'FaYoutube', order_index: 4, is_active: true },
-      ]
-      setSocialLinks(defaultLinks)
     }
   }
 
@@ -906,33 +779,23 @@ export default function OwnerPage() {
   }
 
   const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setUploading(true);
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
     try {
-      const fileExt = file.name.split('.').pop();
-      const timestamp = Date.now();
-      const fileName = 'hero-' + timestamp + '.' + fileExt;
-      const filePath = 'hero/' + fileName;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('news-images')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true });
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: publicUrlData } = supabase.storage
-        .from('news-images')
-        .getPublicUrl(filePath);
-      
-      setHero(prev => ({ ...prev, background_image: publicUrlData.publicUrl }));
-      setMessage('✅ تم رفع صورة الخلفية بنجاح');
+      const fileExt = file.name.split('.').pop()
+      const fileName = `hero-${Date.now()}.${fileExt}`
+      const filePath = `hero/${fileName}`
+      const { error: uploadError } = await supabase.storage.from('news-images').upload(filePath, file, { cacheControl: '3600', upsert: true })
+      if (uploadError) throw uploadError
+      const { data: publicUrlData } = supabase.storage.from('news-images').getPublicUrl(filePath)
+      setHero(prev => ({ ...prev, background_image: publicUrlData.publicUrl }))
+      setMessage('✅ تم رفع صورة الخلفية بنجاح')
     } catch (error) {
-      setMessage('❌ خطأ في رفع الصورة: ' + (error as Error).message);
+      setMessage('❌ خطأ في رفع الصورة: ' + (error as Error).message)
     }
-    setUploading(false);
-  };
+    setUploading(false)
+  }
 
   const handleAddToTicker = async () => {
     if (!newTickerTextAr.trim() || !newTickerTextEn.trim() || !newTickerTextKu.trim()) {
@@ -940,7 +803,7 @@ export default function OwnerPage() {
       return
     }
     
-    const textKey = 'ticker_' + Date.now()
+    const textKey = `ticker_${Date.now()}`
     
     const { error } = await addCustomTickerItem(
       textKey,
@@ -981,7 +844,7 @@ export default function OwnerPage() {
   const handleToggleActive = async (id: number, currentStatus: boolean) => {
     const { error } = await toggleTickerItem(id, !currentStatus)
     if (!error) {
-      setMessage('✅ ' + (currentStatus ? 'تم تعطيل' : 'تم تفعيل') + ' العنصر في الشريط')
+      setMessage(`✅ ${currentStatus ? 'تم تعطيل' : 'تم تفعيل'} العنصر في الشريط`)
       fetchTickerItems()
     }
   }
@@ -1014,6 +877,43 @@ export default function OwnerPage() {
     if (!error) {
       setMessage('✅ تم حذف التعليق')
       fetchComments()
+    } else {
+      setMessage('❌ خطأ في الحذف: ' + error.message)
+    }
+  }
+
+  const handleAddBrief = async () => {
+    if (!newBriefSection || !newBriefTitle || !newBriefDescription) {
+      setMessage('❌ الرجاء ملء جميع الحقول')
+      return
+    }
+    const { error } = await supabase.from('daily_brief').insert([{
+      section_title: newBriefSection,
+      title: newBriefTitle,
+      description: newBriefDescription,
+      link_url: newBriefLink || '',
+      order_index: dailyBrief.length + 1,
+      is_active: true
+    }])
+    if (!error) {
+      setMessage('✅ تم إضافة العنصر بنجاح')
+      setShowDailyBriefModal(false)
+      setNewBriefSection('')
+      setNewBriefTitle('')
+      setNewBriefDescription('')
+      setNewBriefLink('')
+      fetchDailyBrief()
+    } else {
+      setMessage('❌ خطأ: ' + error.message)
+    }
+  }
+
+  const handleDeleteBrief = async (id: number) => {
+    if (!confirm('هل تريد حذف هذا العنصر؟')) return
+    const { error } = await supabase.from('daily_brief').delete().eq('id', id)
+    if (!error) {
+      setMessage('✅ تم الحذف بنجاح')
+      fetchDailyBrief()
     } else {
       setMessage('❌ خطأ في الحذف: ' + error.message)
     }
@@ -1152,7 +1052,7 @@ export default function OwnerPage() {
   const handleToggleTemplate = async (id: number, currentStatus: boolean) => {
     const { error } = await supabase.from('templates_config').update({ is_enabled: !currentStatus }).eq('id', id)
     if (!error) {
-      setMessage('✅ ' + (currentStatus ? 'تم تعطيل' : 'تم تفعيل') + ' القالب')
+      setMessage(`✅ ${currentStatus ? 'تم تعطيل' : 'تم تفعيل'} القالب`)
       fetchTemplates()
     } else {
       setMessage('❌ خطأ: ' + error.message)
@@ -1189,7 +1089,7 @@ export default function OwnerPage() {
       setMessage('❌ لا يمكن حذف حساب المالك الرئيسي')
       return
     }
-    if (!confirm('هل تريد حذف المشرف ' + username + '؟')) return
+    if (!confirm(`هل تريد حذف المشرف ${username}؟`)) return
     const { error } = await supabase.from('admins').delete().eq('id', id)
     if (!error) {
       setMessage('✅ تم حذف المشرف')
@@ -1307,8 +1207,8 @@ export default function OwnerPage() {
     setUploadingImage(true)
     try {
       const fileExt = file.name.split('.').pop()
-      const fileName = 'news-' + Date.now() + '.' + fileExt
-      const filePath = 'news/' + fileName
+      const fileName = `news-${Date.now()}.${fileExt}`
+      const filePath = `news/${fileName}`
       const { error: uploadError } = await supabase.storage.from('news-images').upload(filePath, file, { cacheControl: '3600', upsert: true })
       if (uploadError) throw uploadError
       const { data: publicUrlData } = supabase.storage.from('news-images').getPublicUrl(filePath)
@@ -1318,48 +1218,6 @@ export default function OwnerPage() {
       setMessage('❌ خطأ في رفع الصورة: ' + (error as Error).message)
     }
     setUploadingImage(false)
-  }
-
-  const handleAddSocialLink = async () => {
-    if (!newSocialPlatform || !newSocialUrl) {
-      setMessage('❌ الرجاء اختيار المنصة وإدخال الرابط')
-      return
-    }
-    const { error } = await supabase.from('social_links').insert([{
-      platform: newSocialPlatform,
-      url: newSocialUrl,
-      icon: 'Fa' + newSocialPlatform.charAt(0).toUpperCase() + newSocialPlatform.slice(1),
-      order_index: socialLinks.length + 1,
-      is_active: true
-    }])
-    if (!error) {
-      setMessage('✅ تم إضافة رابط التواصل بنجاح')
-      setShowSocialModal(false)
-      setNewSocialPlatform('')
-      setNewSocialUrl('')
-      fetchSocialLinks()
-    } else {
-      setMessage('❌ خطأ: ' + error.message)
-    }
-  }
-
-  const handleDeleteSocialLink = async (id: number) => {
-    if (!confirm('هل تريد حذف هذا الرابط؟')) return
-    const { error } = await supabase.from('social_links').delete().eq('id', id)
-    if (!error) {
-      setMessage('✅ تم حذف الرابط')
-      fetchSocialLinks()
-    } else {
-      setMessage('❌ خطأ في الحذف: ' + error.message)
-    }
-  }
-
-  const handleToggleSocialLink = async (id: number, currentStatus: boolean) => {
-    const { error } = await supabase.from('social_links').update({ is_active: !currentStatus }).eq('id', id)
-    if (!error) {
-      setMessage('✅ ' + (currentStatus ? 'تم تعطيل' : 'تم تفعيل') + ' الرابط')
-      fetchSocialLinks()
-    }
   }
 
   const toggleNewsSelection = (id: string, list: string[], setList: (newList: string[]) => void) => {
@@ -1394,7 +1252,6 @@ export default function OwnerPage() {
       fetchTemplate2Config()
       fetchTemplate3Config()
       fetchMarqueeConfig()
-      fetchSocialLinks()
     }
   }, [isAuthorized])
 
@@ -1483,9 +1340,6 @@ export default function OwnerPage() {
           </button>
           <button onClick={() => setActiveTab('marquee')} className={`px-4 py-2 rounded-lg transition flex items-center gap-2 text-sm ${activeTab === 'marquee' ? 'bg-red-600 text-white' : 'bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700'}`}>
             <FaImages /> تخصيص الشريط المتحرك
-          </button>
-          <button onClick={() => setActiveTab('social')} className={`px-4 py-2 rounded-lg transition flex items-center gap-2 text-sm ${activeTab === 'social' ? 'bg-red-600 text-white' : 'bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700'}`}>
-            <FaShareAlt /> روابط التواصل
           </button>
         </div>
 
@@ -1636,19 +1490,20 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب النصوص القابلة للتعديل (التحليلات الاقتصادية + رؤيتنا)
+            تبويب النصوص القابلة للتعديل
         ============================================================ */}
         {activeTab === 'sitetexts' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><FaLanguage className="text-red-600" /> 📝 إدارة النصوص القابلة للتعديل</h2>
-            <p className="text-gray-500 text-sm mb-6">يمكنك تعديل النصوص التي تظهر في الصفحة الرئيسية (الحد الأقصى 2000 حرف)</p>
+            <p className="text-gray-500 text-sm mb-6">يمكنك تعديل النصوص التي تظهر في الصفحة الرئيسية (التحليلات الاقتصادية، رؤيتنا، أبراج الفلك، تحليلات سياسية)</p>
             <div className="space-y-6">
               {siteTexts.map((text) => (
                 <div key={text.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                      {text.key_name === 'economicAnalysis' && '📊 التحليلات الاقتصادية (القالب الأول)'}
-                      {text.key_name === 'ourVision' && '👁️ رؤيتنا (القالب الأول)'}
+                      {text.key_name === 'economicAnalysis' && '📊 التحليلات الاقتصادية'}
+                      {text.key_name === 'ourVision' && '👁️ رؤيتنا'}
+                      {text.key_name === 'zodiacText' && '⭐ أبراج الفلك'}
                       {text.key_name === 'politicalAnalysisText' && '📈 تحليلات سياسية (القالب الثاني)'}
                     </h3>
                     {editingSiteText?.id === text.id ? (
@@ -1662,25 +1517,16 @@ export default function OwnerPage() {
                   </div>
                   {editingSiteText?.id === text.id ? (
                     <div className="space-y-4">
-                      <div><label className="block font-bold text-sm mb-1 text-green-700 dark:text-green-400">🇸🇦 العربية</label><textarea value={editingSiteText.value_ar} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ar: e.target.value })} rows={8} maxLength={2000} className="w-full p-3 rounded-lg border dark:bg-gray-900" placeholder="أدخل النص هنا (الحد الأقصى 2000 حرف)" /></div>
-                      <div><label className="block font-bold text-sm mb-1 text-blue-700 dark:text-blue-400">🇬🇧 English</label><textarea value={editingSiteText.value_en} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_en: e.target.value })} rows={8} maxLength={2000} className="w-full p-3 rounded-lg border dark:bg-gray-900" placeholder="Enter text here (max 2000 characters)" /></div>
-                      <div><label className="block font-bold text-sm mb-1 text-purple-700 dark:text-purple-400">🏴 Kurdî</label><textarea value={editingSiteText.value_ku} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ku: e.target.value })} rows={8} maxLength={2000} className="w-full p-3 rounded-lg border dark:bg-gray-900" placeholder="Nivîsê li vir binivîse (herî zêde 2000 karakter)" /></div>
-                      <p className="text-xs text-gray-400">📝 الحد الأقصى 2000 حرف</p>
+                      <div><label className="block font-bold text-sm mb-1 text-green-700 dark:text-green-400">🇸🇦 العربية</label><textarea value={editingSiteText.value_ar} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ar: e.target.value })} rows={6} maxLength={3000} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
+                      <div><label className="block font-bold text-sm mb-1 text-blue-700 dark:text-blue-400">🇬🇧 English</label><textarea value={editingSiteText.value_en} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_en: e.target.value })} rows={6} maxLength={3000} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
+                      <div><label className="block font-bold text-sm mb-1 text-purple-700 dark:text-purple-400">🏴 Kurdî</label><textarea value={editingSiteText.value_ku} onChange={(e) => setEditingSiteText({ ...editingSiteText, value_ku: e.target.value })} rows={6} maxLength={3000} className="w-full p-3 rounded-lg border dark:bg-gray-900" /></div>
+                      <p className="text-xs text-gray-400">الحد الأقصى 3000 حرف</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
-                        <p className="text-xs text-green-600 dark:text-green-400 mb-1">🇸🇦 العربية</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-6">{text.value_ar || '(فارغ)'}</p>
-                      </div>
-                      <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-                        <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">🇬🇧 English</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-6">{text.value_en || '(Empty)'}</p>
-                      </div>
-                      <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg">
-                        <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">🏴 Kurdî</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-6">{text.value_ku || '(Vala)'}</p>
-                      </div>
+                      <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg"><p className="text-xs text-green-600 dark:text-green-400 mb-1">🇸🇦 العربية</p><p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">{text.value_ar || '(فارغ)'}</p></div>
+                      <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg"><p className="text-xs text-blue-600 dark:text-blue-400 mb-1">🇬🇧 English</p><p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">{text.value_en || '(Empty)'}</p></div>
+                      <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg"><p className="text-xs text-purple-600 dark:text-purple-400 mb-1">🏴 Kurdî</p><p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line line-clamp-5">{text.value_ku || '(Vala)'}</p></div>
                     </div>
                   )}
                 </div>
@@ -1747,140 +1593,26 @@ export default function OwnerPage() {
         )}
 
         {/* ============================================================
-            تبويب الجريدة اليومية - مع دعم 3 لغات كامل
+            تبويب الجريدة اليومية
         ============================================================ */}
         {activeTab === 'dailybrief' && (
           <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-            <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-              <h2 className="text-2xl font-bold">📰 الجريدة اليومية (دعم 3 لغات)</h2>
-              <button onClick={() => { setEditingBrief(null); setShowDailyBriefModal(true); }} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                <FaPlus /> إضافة عنصر جديد
-              </button>
-            </div>
-            <p className="text-gray-500 text-sm mb-4">العناصر المعروضة في الجريدة اليومية تدعم اللغة العربية والإنجليزية والكردية</p>
-            
-            {dailyBrief.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-gray-500">لا توجد عناصر في الجريدة اليومية</p>
+            <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">📰 الجريدة اليومية</h2><button onClick={() => setShowDailyBriefModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"><FaPlus /> إضافة</button></div>
+            {dailyBrief.map((item) => (
+              <div key={item.id} className="flex justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                <div><p className="font-bold text-red-500">{item.section_title}</p><p>{item.title}</p></div>
+                <button onClick={() => handleDeleteBrief(item.id)} className="text-red-500"><FaTrash /></button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {dailyBrief.map((item) => (
-                  <div key={item.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        {/* عرض القسم بـ 3 لغات */}
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded text-xs">🇸🇦 {item.section_title_ar}</span>
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded text-xs">🇬🇧 {item.section_title_en}</span>
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded text-xs">🏴 {item.section_title_ku}</span>
-                        </div>
-                        {/* عرض العنوان بـ 3 لغات */}
-                        <p className="font-bold text-gray-800 dark:text-gray-200">📌 {item.title_ar}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">📌 {item.title_en}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">📌 {item.title_ku}</p>
-                        {/* عرض الوصف بـ 3 لغات */}
-                        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{item.description_ar}</p>
-                        <p className="text-xs text-gray-500 line-clamp-2">{item.description_en}</p>
-                        <p className="text-xs text-gray-500 line-clamp-2">{item.description_ku}</p>
-                        {item.link_url && <a href={item.link_url} target="_blank" className="text-xs text-blue-500 mt-1 inline-block">🔗 رابط</a>}
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => { setEditingBrief(item); setShowDailyBriefModal(true); }} 
-                          className="text-blue-500 hover:text-blue-700 p-2"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button onClick={() => handleDeleteBrief(item.id)} className="text-red-500 hover:text-red-700 p-2">
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         )}
 
-        {/* نافذة إضافة أو تعديل عنصر في الجريدة اليومية - دعم 3 لغات */}
         {showDailyBriefModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-3xl mx-4 my-8 max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-bold mb-4">{editingBrief ? '✏️ تعديل عنصر الجريدة اليومية' : '➕ إضافة عنصر جديد للجريدة اليومية'}</h3>
-              
-              <div className="space-y-5">
-                {/* عنوان القسم - 3 لغات */}
-                <div className="border-b pb-3">
-                  <h4 className="font-bold text-lg mb-3 text-gray-700 dark:text-gray-300">📂 عنوان القسم (Section Title)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-green-600">🇸🇦 العربية *</label>
-                      <input type="text" value={editingBrief ? editingBrief.section_title_ar : newBriefSectionAr} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, section_title_ar: e.target.value }) : setNewBriefSectionAr(e.target.value)} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="أخبار عاجلة" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-blue-600">🇬🇧 English</label>
-                      <input type="text" value={editingBrief ? editingBrief.section_title_en : newBriefSectionEn} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, section_title_en: e.target.value }) : setNewBriefSectionEn(e.target.value)} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="Breaking News" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-purple-600">🏴 Kurdî</label>
-                      <input type="text" value={editingBrief ? editingBrief.section_title_ku : newBriefSectionKu} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, section_title_ku: e.target.value }) : setNewBriefSectionKu(e.target.value)} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="Nûçeyên Bilez" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* العنوان - 3 لغات */}
-                <div className="border-b pb-3">
-                  <h4 className="font-bold text-lg mb-3 text-gray-700 dark:text-gray-300">📌 العنوان (Title)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-green-600">🇸🇦 العربية *</label>
-                      <input type="text" value={editingBrief ? editingBrief.title_ar : newBriefTitleAr} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, title_ar: e.target.value }) : setNewBriefTitleAr(e.target.value)} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="العنوان بالعربية" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-blue-600">🇬🇧 English</label>
-                      <input type="text" value={editingBrief ? editingBrief.title_en : newBriefTitleEn} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, title_en: e.target.value }) : setNewBriefTitleEn(e.target.value)} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="Title in English" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-purple-600">🏴 Kurdî</label>
-                      <input type="text" value={editingBrief ? editingBrief.title_ku : newBriefTitleKu} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, title_ku: e.target.value }) : setNewBriefTitleKu(e.target.value)} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="Sernav bi Kurdî" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* الوصف - 3 لغات */}
-                <div className="border-b pb-3">
-                  <h4 className="font-bold text-lg mb-3 text-gray-700 dark:text-gray-300">📝 الوصف (Description)</h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-green-600">🇸🇦 العربية *</label>
-                      <textarea value={editingBrief ? editingBrief.description_ar : newBriefDescriptionAr} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, description_ar: e.target.value }) : setNewBriefDescriptionAr(e.target.value)} rows={3} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="وصف الخبر بالعربية..." />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-blue-600">🇬🇧 English</label>
-                      <textarea value={editingBrief ? editingBrief.description_en : newBriefDescriptionEn} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, description_en: e.target.value }) : setNewBriefDescriptionEn(e.target.value)} rows={3} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="Description in English..." />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1 text-purple-600">🏴 Kurdî</label>
-                      <textarea value={editingBrief ? editingBrief.description_ku : newBriefDescriptionKu} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, description_ku: e.target.value }) : setNewBriefDescriptionKu(e.target.value)} rows={3} className="w-full p-2 rounded-lg border dark:bg-gray-800" placeholder="Danasîn bi Kurdî..." />
-                    </div>
-                  </div>
-                </div>
-
-                {/* الرابط */}
-                <div>
-                  <label className="block font-bold mb-2">🔗 الرابط (اختياري)</label>
-                  <input type="text" value={editingBrief ? editingBrief.link_url : newBriefLink} onChange={(e) => editingBrief ? setEditingBrief({ ...editingBrief, link_url: e.target.value }) : setNewBriefLink(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800" placeholder="/news/example أو https://..." />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button onClick={editingBrief ? handleUpdateBrief : handleAddBrief} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">
-                  {editingBrief ? '💾 تحديث العنصر' : '➕ إضافة العنصر'}
-                </button>
-                <button onClick={() => { setShowDailyBriefModal(false); setEditingBrief(null); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button>
-              </div>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
+              <h3 className="text-xl font-bold mb-4">➕ إضافة عنصر جديد</h3>
+              <div className="space-y-4"><input type="text" placeholder="عنوان القسم" value={newBriefSection} onChange={(e) => setNewBriefSection(e.target.value)} className="w-full p-3 rounded-lg border" /><input type="text" placeholder="العنوان" value={newBriefTitle} onChange={(e) => setNewBriefTitle(e.target.value)} className="w-full p-3 rounded-lg border" /><textarea placeholder="الوصف" value={newBriefDescription} onChange={(e) => setNewBriefDescription(e.target.value)} rows={3} className="w-full p-3 rounded-lg border" /><input type="text" placeholder="الرابط" value={newBriefLink} onChange={(e) => setNewBriefLink(e.target.value)} className="w-full p-3 rounded-lg border" /></div>
+              <div className="flex gap-3 mt-6"><button onClick={handleAddBrief} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button><button onClick={() => setShowDailyBriefModal(false)} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button></div>
             </div>
           </div>
         )}
@@ -2019,84 +1751,8 @@ export default function OwnerPage() {
             <div className="mt-6 flex justify-center"><button onClick={saveMarqueeConfig} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg flex items-center gap-2"><FaSave /> حفظ إعدادات الشريط</button></div>
           </div>
         )}
-
-        {/* ============================================================
-            تبويب روابط التواصل الاجتماعي
-        ============================================================ */}
-        {activeTab === 'social' && (
-          <div className="bg-white dark:bg-cardBg rounded-xl p-6 border border-gray-200 dark:border-gray-800 space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <FaShareAlt className="text-blue-500" /> 🔗 إدارة روابط التواصل الاجتماعي
-              </h2>
-              <button onClick={() => setShowSocialModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                <FaPlus /> إضافة رابط جديد
-              </button>
-            </div>
-            <p className="text-gray-500 text-sm">هذه الروابط ستظهر في تذييل الصفحة (Footer)</p>
-            
-            {socialLinks.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-gray-500">لا توجد روابط تواصل اجتماعي</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {socialLinks.map((link, index) => (
-                  <div key={link.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="flex items-center gap-4 flex-1">
-                      <span className="text-gray-400 text-sm w-8">{index + 1}</span>
-                      <div className="flex-1">
-                        <p className="font-medium text-blue-600 capitalize">{link.platform}</p>
-                        <p className="text-xs text-gray-500 break-all">{link.url}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleToggleSocialLink(link.id, link.is_active)} className={`p-2 rounded ${link.is_active ? 'text-green-500' : 'text-gray-400'}`}>
-                        {link.is_active ? <FaEye /> : <FaEyeSlash />}
-                      </button>
-                      <button onClick={() => handleDeleteSocialLink(link.id)} className="p-2 text-red-500 hover:text-red-700">
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {showSocialModal && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4">
-                  <h3 className="text-xl font-bold mb-4">➕ إضافة رابط تواصل اجتماعي جديد</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block font-bold mb-2 text-blue-600">المنصة *</label>
-                      <select value={newSocialPlatform} onChange={(e) => setNewSocialPlatform(e.target.value)} className="w-full p-3 rounded-lg border dark:bg-gray-800">
-                        <option value="">اختر المنصة</option>
-                        <option value="facebook">فيسبوك (Facebook)</option>
-                        <option value="twitter">تويتر (Twitter/X)</option>
-                        <option value="instagram">انستغرام (Instagram)</option>
-                        <option value="youtube">يوتيوب (YouTube)</option>
-                        <option value="linkedin">لينكد إن (LinkedIn)</option>
-                        <option value="telegram">تيليجرام (Telegram)</option>
-                        <option value="whatsapp">واتساب (WhatsApp)</option>
-                        <option value="tiktok">تيك توك (TikTok)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-bold mb-2">الرابط *</label>
-                      <input type="url" value={newSocialUrl} onChange={(e) => setNewSocialUrl(e.target.value)} placeholder="https://facebook.com/yourpage" className="w-full p-3 rounded-lg border dark:bg-gray-800" />
-                    </div>
-                  </div>
-                  <div className="flex gap-3 mt-6">
-                    <button onClick={handleAddSocialLink} className="bg-red-600 text-white px-4 py-2 rounded-lg flex-1">إضافة</button>
-                    <button onClick={() => { setShowSocialModal(false); setNewSocialPlatform(''); setNewSocialUrl(''); }} className="bg-gray-500 text-white px-4 py-2 rounded-lg flex-1">إلغاء</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )
 }
+```

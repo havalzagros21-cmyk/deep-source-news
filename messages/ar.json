@@ -120,5 +120,8 @@
   "depth": "العمق",
   "depthText": "نقدم تحليلات معمقة تتجاوز العناوين",
   "comprehensiveness": "الشمولية",
-  "comprehensivenessText": "نغطي مختلف المجالات والمناطق"
+  "comprehensivenessText": "نغطي مختلف المجالات والمناطق",
+
+  "dailyBriefDescription": "أهم الأحداث والتحليلات اليومية",
+  "dailyBriefFooter": "يتم تحديث الجريدة يومياً بأهم الأخبار والتحليلات"
 }

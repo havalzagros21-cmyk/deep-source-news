@@ -120,5 +120,8 @@
   "depth": "Kûrahî",
   "depthText": "Em analîzên kûr li derveyî sernavan pêşkêş dikin",
   "comprehensiveness": "Berfirehî",
-  "comprehensivenessText": "Em qad û herêmên cihêreng vedişêrin"
+  "comprehensivenessText": "Em qad û herêmên cihêreng vedişêrin",
+
+  "dailyBriefDescription": "Bûyerên sereke û analîzên rojane",
+  "dailyBriefFooter": "Rojname rojane bi nûçe û analîzên herî girîng tê nûve kirin"
 }

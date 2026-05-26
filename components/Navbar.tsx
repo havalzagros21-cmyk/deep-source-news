@@ -18,7 +18,6 @@ export default function Navbar() {
   const [darkMode, setDarkMode] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  // منع الـ hydration mismatch
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -83,7 +82,6 @@ export default function Navbar() {
     }
   }
 
-  // الروابط العامة
   const publicLinks = [
     { name: mounted ? t('home') : 'الرئيسية', href: '/' },
     { name: mounted ? t('politics') : 'سياسة', href: '/category/politics' },
@@ -101,7 +99,6 @@ export default function Navbar() {
 
   const navLinks = isOwner ? [...publicLinks, ...adminLinks] : publicLinks
 
-  // عرض بسيط قبل التحميل
   if (!mounted) {
     return (
       <nav className="bg-gray-900/95 dark:bg-black/95 backdrop-blur-md sticky top-0 z-50 border-b border-gray-800 shadow-lg">
@@ -135,6 +132,7 @@ export default function Navbar() {
             <span className="text-gray-400 text-sm mr-1">News</span>
           </Link>
 
+          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2 lg:gap-3 xl:gap-4 flex-wrap">
             {navLinks.map((link) => (
               <Link 
@@ -152,7 +150,7 @@ export default function Navbar() {
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full transition-all duration-300 hover:scale-105 text-sm font-medium active:scale-95"
               >
                 <FaSignOutAlt className="text-sm" />
-                <span>{mounted ? t('logout') : 'تسجيل خروج'}</span>
+                <span>{t('logout')}</span>
               </button>
             )}
             
@@ -163,7 +161,7 @@ export default function Navbar() {
               className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-1.5 rounded-full transition-all duration-300 hover:scale-105 text-sm font-medium active:scale-95"
             >
               <FaTelegram className="text-sm" />
-              <span>{mounted ? t('navTelegram') : 'تليجرام'}</span>
+              <span>{t('navTelegram')}</span>
             </a>
             
             <LanguageSwitcher />
@@ -177,6 +175,7 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* Mobile Menu Button */}
           <button 
             onClick={() => setIsOpen(!isOpen)} 
             className="md:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
@@ -185,6 +184,7 @@ export default function Navbar() {
           </button>
         </div>
 
+        {/* Mobile Menu */}
         <div className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="py-4 border-t border-gray-800 space-y-1">
             {navLinks.map((link) => (
@@ -204,7 +204,7 @@ export default function Navbar() {
                 className="flex items-center justify-center gap-2 w-full py-3 text-red-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition-all duration-200 text-sm"
               >
                 <FaSignOutAlt />
-                <span>{mounted ? t('logout') : 'تسجيل خروج'}</span>
+                <span>{t('logout')}</span>
               </button>
             )}
             
@@ -216,8 +216,14 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               <FaTelegram />
-              <span>{mounted ? t('joinTelegram') : 'انضم لتليجرام'}</span>
+              <span>{t('joinTelegram')}</span>
             </a>
+            
+            <div className="py-2 mt-2 border-t border-gray-700 pt-3">
+              <div className="flex justify-center">
+                <LanguageSwitcher />
+              </div>
+            </div>
             
             <button
               onClick={() => {
@@ -227,7 +233,7 @@ export default function Navbar() {
               className="flex items-center justify-center gap-2 w-full py-2 mt-2 rounded-lg bg-gray-800 hover:bg-gray-700 active:bg-gray-600 transition-all duration-300 text-sm"
             >
               {darkMode ? <FaSun className="text-yellow-400" /> : <FaMoon className="text-gray-300" />}
-              <span>{darkMode ? (mounted ? t('lightMode') : 'الوضع الفاتح') : (mounted ? t('darkMode') : 'الوضع المظلم')}</span>
+              <span>{darkMode ? t('lightMode') : t('darkMode')}</span>
             </button>
           </div>
         </div>

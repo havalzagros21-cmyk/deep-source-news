@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { translateText, translateNewsList, translateSingleNews } from '../lib/translate'
 import { getAllSiteTexts } from '../lib/siteConfig'
 import '../lib/i18n'
+import Link from 'next/link'
 import { 
   FaNewspaper, FaCalendarAlt, FaChartLine, FaGlobe, FaUsers, FaFire, 
   FaChartBar, FaEye, FaStar, FaDollarSign, FaEuroSign, FaTrophy, FaOilCan, 
@@ -315,7 +316,7 @@ export default function Home() {
     }
   }, [rawData, translateHero])
 
-  // ترجمة الجريدة اليومية
+  // ترجمة الجريدة اليومية (معدل لدعم 3 لغات)
   useEffect(() => {
     const translateBrief = async () => {
       if (dailyBrief.length === 0) {
@@ -323,16 +324,41 @@ export default function Home() {
         return
       }
       if (currentLocale === 'ar') {
-        setTranslatedBrief(dailyBrief)
+        // للعربية: نستخدم الحقول العربية مباشرة
+        const mappedBrief = dailyBrief.map((item: any) => ({
+          ...item,
+          section_title: item.section_title_ar,
+          title: item.title_ar,
+          description: item.description_ar,
+        }))
+        setTranslatedBrief(mappedBrief)
+      } else if (currentLocale === 'en') {
+        // للإنجليزية: نستخدم الحقول الإنجليزية أو العربية كبديل
+        const mappedBrief = dailyBrief.map((item: any) => ({
+          ...item,
+          section_title: item.section_title_en || item.section_title_ar,
+          title: item.title_en || item.title_ar,
+          description: item.description_en || item.description_ar,
+        }))
+        setTranslatedBrief(mappedBrief)
+      } else if (currentLocale === 'ku') {
+        // للكردية: نستخدم الحقول الكردية أو العربية كبديل
+        const mappedBrief = dailyBrief.map((item: any) => ({
+          ...item,
+          section_title: item.section_title_ku || item.section_title_ar,
+          title: item.title_ku || item.title_ar,
+          description: item.description_ku || item.description_ar,
+        }))
+        setTranslatedBrief(mappedBrief)
       } else {
-        const translated = await Promise.all(
-          dailyBrief.map(async (item) => ({
-            ...item,
-            section_title: await translateText(item.section_title, currentLocale),
-            title: await translateText(item.title, currentLocale),
-          }))
-        )
-        setTranslatedBrief(translated)
+        // لأي لغة أخرى: نستخدم العربية
+        const mappedBrief = dailyBrief.map((item: any) => ({
+          ...item,
+          section_title: item.section_title_ar,
+          title: item.title_ar,
+          description: item.description_ar,
+        }))
+        setTranslatedBrief(mappedBrief)
       }
     }
     translateBrief()
@@ -783,14 +809,21 @@ export default function Home() {
       <div className="bg-gray-900 text-white mt-6">
         <div className="container-custom py-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2"><div className="w-1 h-5 bg-red-500 rounded-full"></div><h3 className="text-white font-bold text-lg">📰 {t('dailyBrief')}</h3></div>
-            <div className="flex items-center gap-2 text-sm text-gray-400"><FaCalendarAlt /><span>{new Date().toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span></div>
+            <Link href="/daily-brief" className="flex items-center gap-2 group">
+              <div className="w-1 h-5 bg-red-500 rounded-full"></div>
+              <h3 className="text-white font-bold text-lg group-hover:text-red-400 transition">📰 {t('dailyBrief')}</h3>
+            </Link>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <FaCalendarAlt />
+              <span>{new Date().toLocaleDateString(currentLocale === 'en' ? 'en-US' : 'ar-EG')}</span>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {translatedBrief.length > 0 ? translatedBrief.map((item, idx) => (
               <a key={idx} href={item.link_url || '#'} className="bg-gray-800/50 p-3 hover:bg-gray-800 transition rounded-lg cursor-pointer">
                 <p className="text-orange-400 text-xs font-bold mb-1">{item.section_title}</p>
                 <p className="text-white text-xs">{item.title}</p>
+                {item.description && <p className="text-gray-400 text-[10px] mt-1">{item.description}</p>}
               </a>
             )) : (
               <>

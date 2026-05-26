@@ -1,11 +1,6 @@
 // lib/auth.ts
 
-// بيانات المالك الثابتة
-const OWNER_EMAIL = 'owner@deepsource.com'
-const OWNER_PASSWORD = 'owner123'
-const OWNER_NAME = 'مالك الموقع'
-const OWNER_ID = 1
-const OWNER_ROLE = 'owner'
+import { supabase } from './supabase'
 
 // دالة مساعدة لإرسال حدث تغيير حالة المصادقة
 const emitAuthChange = () => {
@@ -21,21 +16,40 @@ const emitAuthChange = () => {
   }
 }
 
-// تسجيل الدخول
+// تسجيل الدخول من قاعدة البيانات
 export async function login(email: string, password: string) {
-  if (email === OWNER_EMAIL && password === OWNER_PASSWORD) {
+  try {
+    // جلب بيانات المستخدم من قاعدة البيانات
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', email)
+      .single()
+
+    if (error || !data) {
+      console.error('خطأ في جلب المستخدم:', error)
+      return { success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }
+    }
+
+    // التحقق من كلمة المرور (مشفر بـ base64)
+    const hashedPassword = btoa(password)
+    
+    if (data.password_hash !== hashedPassword) {
+      return { success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }
+    }
+
+    // إعداد بيانات الجلسة
     const adminData = {
-      id: OWNER_ID,
-      username: email.split('@')[0],
-      name: OWNER_NAME,
-      role: OWNER_ROLE,
-      email: OWNER_EMAIL,
+      id: data.id,
+      email: data.email,
+      name: data.full_name,
+      role: data.role,
     }
     
     if (typeof window !== 'undefined') {
-      localStorage.setItem('isOwner', 'true')
-      localStorage.setItem('ownerEmail', email)
-      localStorage.setItem('ownerName', OWNER_NAME)
+      localStorage.setItem('isOwner', data.role === 'owner' ? 'true' : 'true')
+      localStorage.setItem('ownerEmail', data.email)
+      localStorage.setItem('ownerName', data.full_name)
       localStorage.setItem('admin', JSON.stringify(adminData))
     }
     
@@ -45,9 +59,10 @@ export async function login(email: string, password: string) {
       success: true, 
       admin: adminData
     }
+  } catch (err) {
+    console.error('خطأ في تسجيل الدخول:', err)
+    return { success: false, error: 'حدث خطأ أثناء محاولة تسجيل الدخول' }
   }
-  
-  return { success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }
 }
 
 // تسجيل الخروج
@@ -79,7 +94,7 @@ export function getCurrentAdmin(): { email: string | null; name: string | null; 
         const admin = JSON.parse(adminStr)
         return {
           id: admin.id,
-          email: admin.email || admin.username + '@deepsource.com',
+          email: admin.email,
           name: admin.name,
           role: admin.role,
           isAuthenticated: true,
